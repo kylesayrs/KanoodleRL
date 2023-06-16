@@ -1,6 +1,27 @@
 import numpy
 
 
+class Immutable:
+    _frozen = False
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._frozen = True
+
+
+    def __delattr__(self, *args, **kwargs):
+        if self._frozen:
+            raise AttributeError("Cannot delete attribute from frozen object")
+        object.__delattr__(self, *args, **kwargs)
+
+
+    def __setattr__(self, *args, **kwargs):
+        if self._frozen:
+            raise AttributeError("Cannot set attribute of frozen object")
+        object.__setattr__(self, *args, **kwargs)
+
+
 def variants_equal(variant_1: numpy.ndarray, variant_2: numpy.ndarray):
     return variant_1.shape == variant_2.shape and (variant_1 == variant_2).all()
 

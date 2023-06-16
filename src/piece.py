@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Tuple
 
 import numpy
 
@@ -52,4 +52,25 @@ class Piece():
         )
     
 
+def create_action_masks(board_shape: Tuple[int, int], pieces: List[Piece]):
+    def iterate_shape_2d(board_shape: Tuple[int, int], shape_variant: numpy.ndarray):
+        masks = []
 
+        for y in range(board_shape[0] - shape_variant.shape[0]):
+            for x in range(board_shape[1] - shape_variant.shape[1]):
+                board = numpy.zeros(board_shape)
+                board[
+                    y: y + shape_variant.shape[0],
+                    x: x + shape_variant.shape[1]
+                ] = shape_variant
+
+                masks.append(board)
+        
+        return masks
+    
+
+    return sum([
+        iterate_shape_2d(board_shape, shape_variant)
+        for piece in pieces
+        for shape_variant in piece.shape_variants
+    ])

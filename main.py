@@ -1,10 +1,11 @@
-from src.config import Config
+from src.config import AgentConfig, EnvironmentConfig
 from src.train_model import train_model
 
 # TODO: argparse
 
 
 if __name__ == "__main__":
-    config = Config()
+    agent_config = AgentConfig()
+    environment_config = EnvironmentConfig()
 
-    train_model(config)
+    train_model(agent_config, environment_config)
