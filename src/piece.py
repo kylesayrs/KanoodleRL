@@ -2,6 +2,7 @@ from typing import List, Any, Tuple
 import pydantic
 
 import numpy
+from termcolor import colored
 
 from src.utils import variants_equal, get_unique_variants
 
@@ -54,6 +55,16 @@ class Piece():
                 self.color == other.color
             )
         )
+    
+
+    def print(self):
+        for y in range(self.base_shape.shape[0]):
+            for x in range(self.base_shape.shape[1]):
+                if self.base_shape[y, x]:
+                    print(colored("*", color=self.color), end=" ")
+                else:
+                    print(colored(" ", color="white"), end=" ")
+            print()
 
 
 def piece_validator(value: Any) -> Piece:

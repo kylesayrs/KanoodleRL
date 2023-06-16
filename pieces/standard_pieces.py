@@ -7,22 +7,21 @@ pieces = [
             [1, 1, 0, 0],
             [0, 1, 1, 1],
         ],
-        color="dark_green"
-    ),
-    Piece(
-        [
-            [1, 1, 1, 1],
-            [0, 0, 0, 1],
-            [0, 0, 0, 1],
-            [0, 0, 0, 1],
-        ],
         color="light_blue"
     ),
     Piece(
         [
+            [1, 1, 1],
+            [0, 0, 1],
+            [0, 0, 1],
+        ],
+        color="light_magenta"
+    ),
+    Piece(
+        [
             [1, 1, 1, 1],
         ],
-        color="purple"
+        color="red"
     ),
     Piece(
         [
@@ -30,14 +29,14 @@ pieces = [
             [0, 1],
             [1, 1],
         ],
-        color="yellow"
+        color="green"
     ),
     Piece(
         [
             [1, 0, 0],
             [1, 1, 1],
         ],
-        color="orange"
+        color="yellow"
     ),
     Piece(
         [
@@ -45,7 +44,7 @@ pieces = [
             [1, 1, 1],
             [0, 1, 0],
         ],
-        color="gray"
+        color="blue"
     ),
     Piece(
         [
@@ -54,28 +53,28 @@ pieces = [
             [0, 1],
             [1, 1],
         ],
-        color="dark_blue"
+        color="magenta"
     ),
     Piece(
         [
             [1, 1, 1, 1],
             [0, 0, 1, 0],
         ],
-        color="light_pink"
+        color="cyan"
     ),
     Piece(
         [
             [1, 1, 0],
             [1, 1, 1],
         ],
-        color="red"
+        color="light_grey"
     ),
     Piece(
         [
             [1, 0],
             [1, 1],
         ],
-        color="white"
+        color="light_red"
     ),
     Piece(
         [
@@ -83,13 +82,13 @@ pieces = [
             [0, 1, 1],
             [0, 0, 1],
         ],
-        color="dark_pink"
+        color="light_green"
     ),
     Piece(
         [
             [1, 1],
             [1, 1],
         ],
-        color="light_green"
+        color="light_yellow"
     ),
 ]

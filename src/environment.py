@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict, Any
 
 import numpy
 from termcolor import colored
@@ -6,6 +6,7 @@ from gym import Env, spaces
 
 from src.config import EnvironmentConfig
 from src.piece import Piece
+from src.utils import iterate_shape_2d
 from pieces import load_pieces
 
 
@@ -15,10 +16,9 @@ class KanoodleEnvironment(Env):
         self.config = environment_config
 
         self.pieces = load_pieces(environment_config.pieces_set_name)
-        (
-            self.actions,
-            self.pieces_mask
-        ) = get_actions(self.config.board_shape, self.pieces)
+        self.actions, self.pieces_mask = get_all_actions(
+            self.config.board_shape, self.pieces
+        )
 
         self.observation_space = spaces.MultiDiscrete([
             numpy.prod(self.config.board_shape),
@@ -29,24 +29,23 @@ class KanoodleEnvironment(Env):
         self.reset()
         
 
-    def reset(self):
+    def reset(self) -> None:
         self.board = numpy.zeros(self.config.board_shape, dtype=int)
         self.available_pieces = list(range(len(self.pieces)))
         self.action_history = []
 
 
-    def step(self, action_confs: int):
+    def step(self, action_confs: int) -> Tuple[numpy.ndarray, float, bool, Optional[Dict[str, Any]]]:
         if not self.invalid_actions_mask.all():
             # select action
             action_confs[self.invalid_actions_mask] = numpy.NINF
             action_index = numpy.argmax(action_confs)
-            print(f"action_index: {action_index}")
             action = self.actions[action_index]
             piece_index = self.pieces_mask[action_index]
 
             # do action
             assert not numpy.bitwise_and(self.board, action).any()
-            self.action_history.append([action, piece_index])
+            self.action_history.append((action, piece_index))
             self.board = numpy.bitwise_or(self.board, action)
             self.available_pieces.remove(piece_index)
 
@@ -59,7 +58,7 @@ class KanoodleEnvironment(Env):
         return observation, reward, is_finished, info
 
 
-    def get_reward(self):
+    def get_reward(self) -> float:
         return (
             self.config.complete_reward
             if self.board.all()
@@ -67,12 +66,12 @@ class KanoodleEnvironment(Env):
         )
     
 
-    def is_finished(self):
-        return self.board.all() or  self.invalid_actions_mask.all()
+    def is_finished(self) -> bool:
+        return self.board.all() or self.invalid_actions_mask.all()
 
 
     @property
-    def invalid_actions_mask(self):
+    def invalid_actions_mask(self) -> numpy.ndarray:
         unavailable_piece_actions = [
             peice_index not in self.available_pieces
             for peice_index in self.pieces_mask
@@ -89,54 +88,36 @@ class KanoodleEnvironment(Env):
         )
 
 
-    def render(self, mode="human"):
+    def render(self, mode: str = "console") -> None:
         if mode == "console":
-            self._render_console()
-        elif mode == "human":
-            self._render_human()
+            self.render_console()
         else:
             raise ValueError(f"Unknown render mode {mode}")
 
 
-    def _render_console(self):
-        print("_render_console")
+    def render_console(self, action_history: Optional[List[Tuple[numpy.ndarray, int]]] = None) -> None:
+        action_history = self.action_history if action_history is None else action_history
+
         for y in range(self.config.board_shape[0]):
             for x in range(self.config.board_shape[1]):
-                for action_mask, piece_index in self.action_history:
+                for action_mask, piece_index in action_history:
                     if action_mask[y, x]:
                         color = self.pieces[piece_index].color
-                        print(colored("*", color=color), end=" ")
+                        print(colored(self.config.solid_char, color=color), end=" ")
                         break
                 else:
-                    print(colored("o", color="white"), end=" ")
+                    print(colored(self.config.empty_char, color="white"), end=" ")
             print()
-
-        print(f"{''.join(['- '] * self.config.board_shape[1])}")
         
         print(self.available_pieces)
 
+    def render_action(self, action: numpy.ndarray, piece_index: int):
+        action_history = self.action_history.copy()
+        action_history.append((action, piece_index))
+        self.render_console(action_history)
 
-    def _render_human(self):
-        pass
 
-
-def get_actions(board_shape: Tuple[int, int], pieces: List[Piece]):
-    def iterate_shape_2d(board_shape: Tuple[int, int], shape_variant: numpy.ndarray):
-        masks = []
-
-        for y in range(board_shape[0] - shape_variant.shape[0] + 1):
-            for x in range(board_shape[1] - shape_variant.shape[1] + 1):
-                board = numpy.zeros(board_shape, dtype=int)
-                board[
-                    y: y + shape_variant.shape[0],
-                    x: x + shape_variant.shape[1]
-                ] = shape_variant
-
-                masks.append(board)
-        
-        return masks
-    
-
+def get_all_actions(board_shape: Tuple[int, int], pieces: List[Piece]) -> Tuple[numpy.ndarray, numpy.ndarray]:
     actions = []
     pieces_mask = []
     for piece_index, piece in enumerate(pieces):

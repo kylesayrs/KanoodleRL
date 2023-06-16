@@ -18,3 +18,6 @@ class EnvironmentConfig(BaseModel):
 
     complete_reward: float = Field(default=1.0)
     step_reward: float = Field(default=0.0)
+
+    solid_char: str = Field(default="*")
+    empty_char: str = Field(default="o")

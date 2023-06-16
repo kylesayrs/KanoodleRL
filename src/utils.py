@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy
 
 
@@ -39,3 +41,19 @@ def get_unique_variants(array: numpy.ndarray):
             
 
     return unique_elements
+
+
+def iterate_shape_2d(board_shape: Tuple[int, int], shape_variant: numpy.ndarray):
+        masks = []
+
+        for y in range(board_shape[0] - shape_variant.shape[0] + 1):
+            for x in range(board_shape[1] - shape_variant.shape[1] + 1):
+                board = numpy.zeros(board_shape, dtype=int)
+                board[
+                    y: y + shape_variant.shape[0],
+                    x: x + shape_variant.shape[1]
+                ] = shape_variant
+
+                masks.append(board)
+        
+        return masks
