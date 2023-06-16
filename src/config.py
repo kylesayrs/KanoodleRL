@@ -1,10 +1,10 @@
-from typing import Tuple, List
+from typing import Tuple
 from pydantic import BaseModel, Field
 
+import termcolor
 
 from src.piece import Piece
 from src.utils import Immutable
-from pieces import standard_pieces
 
 
 class AgentConfig(Immutable, BaseModel):
@@ -12,9 +12,9 @@ class AgentConfig(Immutable, BaseModel):
 
 
 
-class EnvironmentConfig(Immutable, BaseModel):
+class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(5, 11))
-    pieces: List[Piece] = Field(default=standard_pieces)
+    pieces_set_name: str = Field(default="standard")
 
-    class Config:
-        arbitrary_types_allowed = True
+    complete_reward: float = Field(default=1.0)
+    step_reward: float = Field(default=0.0)

@@ -6,7 +6,6 @@ import numpy
 from src.config import AgentConfig, EnvironmentConfig
 from src.piece import Piece
 from src.environment import KanoodleEnvironment
-from pieces.standard_pieces import pieces
 
 
 def create_action_space(pieces: List[Piece]):
@@ -16,12 +15,12 @@ def create_action_space(pieces: List[Piece]):
 def train_model(agent_config: AgentConfig, environment_config: EnvironmentConfig):
     print(agent_config)
     print(environment_config)
-    print(environment_config.pieces)
 
-    environment_config.pieces = []
-    print(environment_config)
+    environment = KanoodleEnvironment(environment_config)
 
-    
+    action_confs = numpy.array(range(len(environment.actions)), dtype=numpy.float32)
 
-    #environment = KanoodleEnvironment(config.board_shape)
-    pass
+    is_finished = False
+    while not is_finished:
+        observation, reward, is_finished, info = environment.step(action_confs)
+        environment.render(mode="console")
