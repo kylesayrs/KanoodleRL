@@ -1,8 +1,8 @@
 import numpy
 
-from src.config import AgentConfig, EnvironmentConfig
-from src.piece import Piece
+from src.config import EnvironmentConfig
 from src.environment import KanoodleEnvironment
+
 
 def get_piece_input(environment: KanoodleEnvironment, reward: float):
     print(chr(27) + "[2J")

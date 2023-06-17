@@ -1,14 +1,30 @@
 from typing import Tuple
 from pydantic import BaseModel, Field
 
-import termcolor
-
 from src.piece import Piece
 from src.utils import Immutable
 
 
-class AgentConfig(Immutable, BaseModel):
-    pass
+class TrainingConfig(Immutable, BaseModel):
+    n_envs: int = Field(default=2)
+    total_timesteps: float = Field(default=300_000)
+
+    policy: str = Field(default="MultiInputPolicy")
+    policy_kwargs: str = Field(default={})
+
+    learning_rate: float = Field(default=0.0005)
+    n_steps: float = Field(default=1024, description="The number of steps to run for each environment per update")
+    batch_size: int = Field(default=64)
+    n_epochs: int = Field(default=15)
+
+    gamma: float = Field(default=0.97)
+    gae_lambda: float = Field(default=0.95)
+    clip_range: float = Field(default=0.2)
+
+    num_validation_steps: int = Field(default=300)
+    progress_bar: bool = Field(default=False)
+    verbosity: int = Field(default=2)
+    device: str = Field(default="cpu")
 
 
 

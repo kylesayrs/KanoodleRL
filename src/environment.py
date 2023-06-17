@@ -20,11 +20,11 @@ class KanoodleEnvironment(Env):
             self.config.board_shape, self.pieces
         )
 
-        self.observation_space = spaces.MultiDiscrete([
-            numpy.prod(self.config.board_shape),
-            len(self.pieces)
-        ])
-        self.action_space = spaces.Discrete(len(self.actions))
+        self.observation_space = spaces.Dict({
+            "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
+            "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
+        })
+        self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
 
         self.reset()
         
@@ -34,8 +34,10 @@ class KanoodleEnvironment(Env):
         self.available_pieces = list(range(len(self.pieces)))
         self.action_history = []
 
+        return self.get_observation()
 
-    def step(self, action_confs: int) -> Tuple[numpy.ndarray, float, bool, Optional[Dict[str, Any]]]:
+
+    def step(self, action_confs: int) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         if not self.invalid_actions_mask.all():
             # select action
             action_confs[self.invalid_actions_mask] = numpy.NINF
@@ -50,12 +52,21 @@ class KanoodleEnvironment(Env):
             self.available_pieces.remove(piece_index)
 
         # return results
-        observation = numpy.concatenate([self.board.flatten(), self.available_pieces])
+        observation = self.get_observation()
         reward = self.get_reward()
         is_finished = self.is_finished()
-        info = None
+        info = {}
 
         return observation, reward, is_finished, info
+    
+
+    def get_observation(self) -> numpy.ndarray:
+        available_pieces_mask = numpy.zeros(len(self.pieces), dtype=numpy.float32)
+        available_pieces_mask[self.available_pieces] = 1.0
+        return {
+            "board": self.board.flatten(),
+            "available_pieces_mask": available_pieces_mask
+        }
 
 
     def get_reward(self) -> float:

@@ -1,26 +1,45 @@
-import numpy
+import datetime
 
-from src.config import AgentConfig, EnvironmentConfig
+from stable_baselines3 import PPO
+from stable_baselines3.common.env_util import make_vec_env
+
+from src.config import TrainingConfig, EnvironmentConfig
 from src.piece import Piece
 from src.environment import KanoodleEnvironment
 
 
-def train_agent(agent_config: AgentConfig, environment_config: EnvironmentConfig):
-    print(agent_config)
-    print(environment_config)
+def train_agent(training_config: TrainingConfig, environment_config: EnvironmentConfig):
+    environment = make_vec_env(
+        KanoodleEnvironment,
+        env_kwargs={"environment_config": environment_config},
+        n_envs=training_config.n_envs
+    )
 
-    environment = KanoodleEnvironment(environment_config)
+    model = PPO(
+        training_config.policy,
+        environment,
+        policy_kwargs=training_config.policy_kwargs,
+        learning_rate=training_config.learning_rate,
+        n_steps=training_config.n_steps,
+        batch_size=training_config.batch_size,
+        n_epochs=training_config.n_epochs,
+        gamma=training_config.gamma,
+        gae_lambda=training_config.gae_lambda,
+        clip_range=training_config.clip_range,
+        verbose=training_config.verbosity,
+        device=training_config.device,
+    )
 
-    action_confs = numpy.array(range(len(environment.actions)), dtype=numpy.float32)
-
-    is_finished = False
-    while not is_finished:
-        observation, reward, is_finished, info = environment.step(action_confs)
-        environment.render(mode="console")
+    model.learn(
+        total_timesteps=training_config.total_timesteps,
+        progress_bar=training_config.progress_bar
+    )
+    now_string = str(datetime.now()).replace(" ", "_")
+    model.save(f"checkpoints/{now_string}.zip")
 
 
 if __name__ == "__main__":
-    agent_config = AgentConfig()
+    training_config = TrainingConfig()
     environment_config = EnvironmentConfig(pieces_set_name="test")
 
-    train_agent(agent_config, environment_config)
+    train_agent(training_config, environment_config)
