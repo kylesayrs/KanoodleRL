@@ -40,6 +40,6 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
 
 if __name__ == "__main__":
     training_config = TrainingConfig()
-    environment_config = EnvironmentConfig(pieces_set_name="test")
+    environment_config = EnvironmentConfig()
 
     train_agent(training_config, environment_config)

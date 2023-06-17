@@ -122,6 +122,7 @@ class KanoodleEnvironment(Env):
         
         print(self.available_pieces)
 
+
     def render_action(self, action: numpy.ndarray, piece_index: int):
         action_history = self.action_history.copy()
         action_history.append((action, piece_index))

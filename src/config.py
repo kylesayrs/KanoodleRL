@@ -7,12 +7,12 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=5_000)#300_000)
+    total_timesteps: float = Field(default=1_000_000)
 
     policy: str = Field(default="MultiInputPolicy")
     policy_kwargs: str = Field(default={})
 
-    learning_rate: float = Field(default=0.0005)
+    learning_rate: float = Field(default=3e-6)
     n_steps: float = Field(default=1024, description="The number of steps to run for each environment per update")
     batch_size: int = Field(default=64)
     n_epochs: int = Field(default=15)
@@ -33,7 +33,7 @@ class EnvironmentConfig(BaseModel):
     pieces_set_name: str = Field(default="standard")
 
     complete_reward: float = Field(default=100.0)
-    fill_reward: float = Field(default=1.0)
+    fill_reward: float = Field(default=0.0)
 
     solid_char: str = Field(default="*")
     empty_char: str = Field(default="o")
