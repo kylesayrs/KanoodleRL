@@ -19,6 +19,7 @@ class KanoodleEnvironment(Env):
         self.actions, self.pieces_mask = get_all_actions(
             self.config.board_shape, self.pieces
         )
+        self.invalid_actions_mask = numpy.zeros(len(self.actions), dtype=int)
 
         self.observation_space = spaces.Dict({
             "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
@@ -50,6 +51,7 @@ class KanoodleEnvironment(Env):
             self.action_history.append((action, piece_index))
             self.board = numpy.bitwise_or(self.board, action)
             self.available_pieces.remove(piece_index)
+            self.invalid_actions_mask = self.update_invalid_actions(action, piece_index)
 
         # return results
         observation = self.get_observation()
@@ -81,22 +83,29 @@ class KanoodleEnvironment(Env):
         return self.board.all() or self.invalid_actions_mask.all()
 
 
-    @property
-    def invalid_actions_mask(self) -> numpy.ndarray:
+    def update_invalid_actions(self, chosen_action: numpy.ndarray, chosen_piece_index: int) -> numpy.ndarray:
         unavailable_piece_actions = [
-            peice_index not in self.available_pieces
+            peice_index not in self.available_pieces#== chosen_piece_index
             for peice_index in self.pieces_mask
         ]
 
         intersecting_piece_actions = [
+            #action[chosen_action].any()
             numpy.bitwise_and(self.board, action).any()
             for action in self.actions
         ]
-
-        return numpy.bitwise_or(
+        
+        self.invalid_actions_mask = numpy.bitwise_or(
+            self.invalid_actions_mask,
             unavailable_piece_actions,
-            intersecting_piece_actions
         )
+        self.invalid_actions_mask = numpy.bitwise_or(
+            #self.invalid_actions_mask,
+            unavailable_piece_actions,
+            intersecting_piece_actions,
+        )
+
+        return self.invalid_actions_mask
 
 
     def render(self, mode: str = "console") -> None:
