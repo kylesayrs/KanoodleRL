@@ -16,7 +16,7 @@ def get_piece_input(environment: KanoodleEnvironment, reward: float):
     action_piece_index = None
     while action_piece_index == None:
         try:
-            action_piece_index = int(input(f"Which piece? {environment.available_pieces}: "))
+            action_piece_index = int(input(f"Which piece?: "))
         except EOFError:
             exit(0)
         except Exception as exception:
@@ -38,7 +38,7 @@ def get_action_index_input(environment: KanoodleEnvironment, action_piece_index:
     action_index = None
     while action_index == None:
         try:
-            action_index = int(input(f"Which location? {environment.available_pieces}: "))
+            action_index = int(input(f"Which location?: "))
         except EOFError:
             exit(0)
         except Exception as exception:

@@ -7,7 +7,7 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=300_000)
+    total_timesteps: float = Field(default=5_000)#300_000)
 
     policy: str = Field(default="MultiInputPolicy")
     policy_kwargs: str = Field(default={})
@@ -32,8 +32,8 @@ class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(5, 11))
     pieces_set_name: str = Field(default="standard")
 
-    complete_reward: float = Field(default=1.0)
-    step_reward: float = Field(default=0.0)
+    complete_reward: float = Field(default=100.0)
+    fill_reward: float = Field(default=1.0)
 
     solid_char: str = Field(default="*")
     empty_char: str = Field(default="o")

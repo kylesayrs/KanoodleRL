@@ -19,7 +19,7 @@ class KanoodleEnvironment(Env):
         self.actions, self.pieces_mask = get_all_actions(
             self.config.board_shape, self.pieces
         )
-        self.invalid_actions_mask = numpy.zeros(len(self.actions), dtype=bool)
+        self.all_intersecting_actions = get_all_intersecting_actions(self.actions)
 
         self.observation_space = spaces.Dict({
             "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
@@ -33,25 +33,25 @@ class KanoodleEnvironment(Env):
     def reset(self) -> None:
         self.board = numpy.zeros(self.config.board_shape, dtype=int)
         self.available_pieces = list(range(len(self.pieces)))
+        self.invalid_actions_mask = numpy.array([False for _ in range(len(self.actions))])
         self.action_history = []
 
         return self.get_observation()
 
 
     def step(self, action_confs: int) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
-        if not self.invalid_actions_mask.all():
-            # select action
-            action_confs[self.invalid_actions_mask] = numpy.NINF
-            action_index = numpy.argmax(action_confs)
-            action = self.actions[action_index]
-            piece_index = self.pieces_mask[action_index]
+        # select action
+        action_confs[self.invalid_actions_mask] = numpy.NINF
+        action_index = numpy.argmax(action_confs)
+        action = self.actions[action_index]
+        piece_index = self.pieces_mask[action_index]
 
-            # do action
-            assert not numpy.bitwise_and(self.board, action).any()
-            self.board = numpy.bitwise_or(self.board, action)
-            self.available_pieces.remove(piece_index)
-            self.invalid_actions_mask = self.update_invalid_actions(action, piece_index)
-            self.action_history.append((action, piece_index))
+        # do action
+        assert not numpy.bitwise_and(self.board, action).any()
+        self.board = numpy.bitwise_or(self.board, action)
+        self.available_pieces.remove(piece_index)
+        self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
+        self.action_history.append((action, piece_index))
 
         # return results
         observation = self.get_observation()
@@ -72,36 +72,28 @@ class KanoodleEnvironment(Env):
 
 
     def get_reward(self) -> float:
-        return (
-            self.config.complete_reward
-            if self.board.all()
-            else self.config.step_reward
-        )
+        if self.board.all():
+            return self.config.complete_reward
+        
+        else:
+            return self.config.fill_reward * numpy.count_nonzero(self.board)
     
 
     def is_finished(self) -> bool:
         return self.board.all() or self.invalid_actions_mask.all()
 
 
-    def update_invalid_actions(self, chosen_action: numpy.ndarray, chosen_piece_index: int) -> numpy.ndarray:
-        unavailable_piece_actions = [
-            peice_index == chosen_piece_index
-            #peice_index not in self.available_pieces
-            for peice_index in self.pieces_mask
-        ]
-
-        intersecting_piece_actions = [
-            action[chosen_action == 1].any()
-            for action in self.actions
-        ]
-        
+    def update_invalid_actions(self, action_index: int, chosen_piece_index: int) -> numpy.ndarray:
+        # piece is not available
         self.invalid_actions_mask = numpy.bitwise_or(
             self.invalid_actions_mask,
-            unavailable_piece_actions,
+            self.pieces_mask == chosen_piece_index,
         )
+
+        # actions would intersect
         self.invalid_actions_mask = numpy.bitwise_or(
             self.invalid_actions_mask,
-            intersecting_piece_actions,
+            self.all_intersecting_actions[action_index],
         )
 
         return self.invalid_actions_mask
@@ -151,4 +143,14 @@ def get_all_actions(board_shape: Tuple[int, int], pieces: List[Piece]) -> Tuple[
         actions += piece_actions
         pieces_mask += peice_mask
 
-    return actions, pieces_mask
+    return numpy.array(actions), numpy.array(pieces_mask)
+
+
+def get_all_intersecting_actions(actions: List[numpy.ndarray]):
+    return [
+        [
+            action2[action1 == 1].any()
+            for action2 in actions
+        ]
+        for action1 in actions
+    ]
