@@ -76,7 +76,10 @@ class KanoodleEnvironment(Env):
             return self.config.complete_reward
         
         else:
-            return self.config.fill_reward * numpy.count_nonzero(self.board)
+            return (
+                self.config.fill_reward * numpy.count_nonzero(self.board) +
+                self.config.step_reward
+            )
     
 
     def is_finished(self) -> bool:
