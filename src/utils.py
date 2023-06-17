@@ -57,3 +57,14 @@ def iterate_shape_2d(board_shape: Tuple[int, int], shape_variant: numpy.ndarray)
                 masks.append(board)
         
         return masks
+
+def action_confs_to_prob(action_confs: numpy.ndarray, invalid_actions: numpy.ndarray):
+    assert (action_confs >= 0).all()
+    action_confs = action_confs.copy()
+
+    action_confs[invalid_actions] = 0.0
+
+    if sum(action_confs) == 0.0:
+        action_confs[numpy.invert(invalid_actions)] = 1.0
+
+    return action_confs / sum(action_confs)

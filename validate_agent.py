@@ -18,10 +18,11 @@ def validate_agent(
     model = PPO.load(checkpoint_path)
 
     observation = environment.reset()
-    for i in range(training_config.num_validation_steps):
+    while True:
         action, _states = model.predict(observation)
-        observation, rewards, dones, info = environment.step(action)
+        observation, rewards, dones, _info = environment.step(action)
         environment.render()
+        print(f"rewards: {rewards}")
         if dones:
             break
 
@@ -31,8 +32,8 @@ if __name__ == "__main__":
 
     training_config = TrainingConfig()
     environment_config = EnvironmentConfig(
-        #board_shape=(3, 3),
-        pieces_set_name="test",
+        board_shape=(5, 5),
+        pieces_set_name="junior",
     )
 
     validate_agent(

@@ -19,8 +19,8 @@ def load_pieces(pieces_set_name: str) -> List[Piece]:
     elif pieces_set_name == "junior":
         from .junior_pieces import pieces
 
-    elif pieces_set_name == "small":
-        from .small_pieces import pieces
+    elif pieces_set_name == "demo":
+        from .demo_pieces import pieces
     
     else:
         raise ValueError(f"Unknown piece set name {pieces_set_name}")

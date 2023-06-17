@@ -6,7 +6,7 @@ from gym import Env, spaces
 
 from src.config import EnvironmentConfig
 from src.piece import Piece
-from src.utils import iterate_shape_2d
+from src.utils import iterate_shape_2d, action_confs_to_prob
 from pieces import load_pieces
 
 
@@ -39,10 +39,10 @@ class KanoodleEnvironment(Env):
         return self.get_observation()
 
 
-    def step(self, action_confs: int) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
+    def step(self, action_confs: numpy.ndarray) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         # select action
-        action_confs[self.invalid_actions_mask] = numpy.NINF
-        action_index = numpy.argmax(action_confs)
+        action_prob = action_confs_to_prob(action_confs, self.invalid_actions_mask)
+        action_index = numpy.random.choice(list(range(len(action_confs))), p=action_prob)
         action = self.actions[action_index]
         piece_index = self.pieces_mask[action_index]
 
@@ -102,14 +102,14 @@ class KanoodleEnvironment(Env):
         return self.invalid_actions_mask
 
 
-    def render(self, mode: str = "console") -> None:
-        if mode == "console":
-            self.render_console()
+    def render(self, mode: str = "human") -> None:
+        if mode == "human":
+            self.render_human()
         else:
             raise ValueError(f"Unknown render mode {mode}")
 
 
-    def render_console(self, action_history: Optional[List[Tuple[numpy.ndarray, int]]] = None) -> None:
+    def render_human(self, action_history: Optional[List[Tuple[numpy.ndarray, int]]] = None) -> None:
         action_history = self.action_history if action_history is None else action_history
 
         for y in range(self.config.board_shape[0]):
@@ -129,7 +129,7 @@ class KanoodleEnvironment(Env):
     def render_action(self, action: numpy.ndarray, piece_index: int):
         action_history = self.action_history.copy()
         action_history.append((action, piece_index))
-        self.render_console(action_history)
+        self.render_human(action_history)
 
 
 def get_all_actions(board_shape: Tuple[int, int], pieces: List[Piece]) -> Tuple[numpy.ndarray, numpy.ndarray]:
