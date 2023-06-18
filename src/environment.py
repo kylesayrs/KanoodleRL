@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional, Dict, Any
 
 import numpy
+import functools
 from termcolor import colored
 from gym import Env, spaces
 
@@ -75,6 +76,9 @@ class KanoodleEnvironment(Env):
         if self.board.all():
             return self.config.complete_reward
         
+        elif self.is_finished():
+            return self.config.fail_reward
+        
         else:
             return (
                 self.config.fill_reward * numpy.count_nonzero(self.board) +
@@ -83,8 +87,21 @@ class KanoodleEnvironment(Env):
     
 
     def is_finished(self) -> bool:
-        return self.board.all() or self.invalid_actions_mask.all()
+        return (
+            self.board.all() or
+            self.invalid_actions_mask.all() or
+            not self._get_fillable_spaces().all()
+        )
+    
 
+    def _get_fillable_spaces(self) -> numpy.ndarray:
+        fillable_board_spaces = numpy.array(list(functools.reduce(
+            numpy.bitwise_or,
+            self.actions[numpy.invert(self.invalid_actions_mask)],
+        )), dtype=bool)
+        
+        return numpy.bitwise_or(fillable_board_spaces, self.board)
+    
 
     def update_invalid_actions(self, action_index: int, chosen_piece_index: int) -> numpy.ndarray:
         # piece is not available
@@ -98,6 +115,8 @@ class KanoodleEnvironment(Env):
             self.invalid_actions_mask,
             self.all_intersecting_actions[action_index],
         )
+
+        # TODO: action leads to an unsolvable board
 
         return self.invalid_actions_mask
 
@@ -124,6 +143,8 @@ class KanoodleEnvironment(Env):
             print()
         
         print(self.available_pieces)
+        print(f"reward: {self.get_reward()}")
+        print(f"is_finished: {self.is_finished()}")
 
 
     def render_action(self, action: numpy.ndarray, piece_index: int):

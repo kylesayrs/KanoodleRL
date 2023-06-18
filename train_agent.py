@@ -3,6 +3,7 @@ from datetime import datetime
 from stable_baselines3 import PPO, DDPG
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.monitor import Monitor
 
 from src.config import EnvironmentConfig, TrainingConfig, PPOConfig, DDPGConfig
 from src.environment import KanoodleEnvironment
@@ -21,6 +22,7 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
             environment,
             policy_kwargs=training_config.policy_kwargs,
             learning_rate=training_config.learning_rate,
+            learning_starts=training_config.learning_starts,
             n_steps=training_config.n_steps,
             batch_size=training_config.batch_size,
             n_epochs=training_config.n_epochs,
@@ -51,11 +53,13 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
 
     model.learn(
         total_timesteps=training_config.total_timesteps,
+        log_interval=training_config.log_interval,
         callback=EvalCallback(
-            KanoodleEnvironment(environment_config),
+            Monitor(KanoodleEnvironment(environment_config)),
+            n_eval_episodes=training_config.n_eval_episodes,
             eval_freq=training_config.eval_freq,
             render=True,
-        ),
+        ) if training_config.n_eval_episodes > 0 else None,
         progress_bar=training_config.progress_bar,
     )
     now_string = str(datetime.now()).replace(" ", "_")
@@ -63,7 +67,8 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
 
 
 if __name__ == "__main__":
-    training_config = PPOConfig()
+    #training_config = PPOConfig()
+    training_config = DDPGConfig()
     environment_config = EnvironmentConfig(
         board_shape=(5, 5),
         pieces_set_name="junior"

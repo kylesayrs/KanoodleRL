@@ -50,6 +50,7 @@ def get_action_index_input(environment: KanoodleEnvironment, action_piece_index:
 def play_game(environment_config: EnvironmentConfig):
     environment = KanoodleEnvironment(environment_config)
 
+    total_rewards = 0.0
     reward = None
     is_finished = False
     while not is_finished:
@@ -61,6 +62,7 @@ def play_game(environment_config: EnvironmentConfig):
         action_confs[action_index] = 1.0
 
         observation, reward, is_finished, info = environment.step(action_confs)
+        total_rewards += reward
 
     print(f"reward: {reward}")
 

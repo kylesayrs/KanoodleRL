@@ -11,7 +11,8 @@ class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
     total_timesteps: float = Field(default=500_000)
 
-    n_eval_episodes: int = Field(default=1)
+    log_interval: int = Field(default=100)
+    n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
 
     progress_bar: bool = Field(default=False)
@@ -24,7 +25,8 @@ class DDPGConfig(TrainingConfig):
     policy: str = Field(default="MultiInputPolicy")
     policy_kwargs: str = Field(default={})
 
-    learning_rate: float = Field(default=3e-6)
+    learning_starts: int = Field(default=0)
+    learning_rate: float = Field(default=1e-4)
     train_freq: Tuple[int, str] = Field(default=(100, "step"))
     batch_size: int = Field(default=64)
     gamma: float = Field(default=0.99)
@@ -34,7 +36,7 @@ class DDPGConfig(TrainingConfig):
     replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
     replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
 
-    verbose: int = Field(default=1)
+    verbose: int = Field(default=2)
     device: str = Field(default="cpu")
 
 
@@ -52,7 +54,7 @@ class PPOConfig(TrainingConfig):
     clip_range: float = Field(default=0.2)
     normalize_advantage: bool = Field(default=True)
 
-    verbose: int = Field(default=2)
+    verbose: int = Field(default=1)
     device: str = Field(default="cpu")
 
 
@@ -60,9 +62,10 @@ class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(5, 11))
     pieces_set_name: str = Field(default="standard")
 
-    complete_reward: float = Field(default=50.0)
+    complete_reward: float = Field(default=10.0)
+    fail_reward: float = Field(default=-2.5)
     fill_reward: float = Field(default=0.0)
-    step_reward: float = Field(default=0.0)
+    step_reward: float = Field(default=1.0)
 
     solid_char: str = Field(default="*")
     empty_char: str = Field(default="o")
