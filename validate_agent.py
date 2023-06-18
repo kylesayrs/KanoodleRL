@@ -26,12 +26,15 @@ def validate_agent(
     else:
         raise ValueError(f"Unknown training config class {training_config.__class__}")
 
-    observation = environment.reset()
     reward_returns = []
     successes = []
     for _ in tqdm.tqdm(range(num_episodes)):
+        observation = environment.reset()
         rewards = []
         is_finished = False
+        if render:
+            environment.render()
+
         while not is_finished:
             action_confs, _states = model.predict(observation)
             print(action_confs)
@@ -43,9 +46,8 @@ def validate_agent(
         
         successes.append(info["is_success"])
         reward_returns.append(sum(rewards))
-        environment.reset()
 
-    print(f"successes: {100 * numpy.mean(successes):1f}% {sum(successes)}/{len(successes)}")
+    print(f"successes: {100 * numpy.mean(successes)}% +/- {numpy.std(successes):.2f}")
     print(f"returns  : {numpy.mean(reward_returns):.2f} +/- {numpy.std(reward_returns):.2f}")
 
 

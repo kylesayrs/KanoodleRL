@@ -42,7 +42,6 @@ class KanoodleEnvironment(Env):
 
     def step(self, action_confs: numpy.ndarray) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         # select action
-        #action_prob **= 1.5
         action_prob = action_confs_to_prob(action_confs, self.invalid_actions_mask)
         action_index = numpy.random.choice(list(range(len(action_confs))), p=action_prob)
         #action_confs[self.invalid_actions_mask] = numpy.NINF

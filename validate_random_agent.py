@@ -8,15 +8,15 @@ from src.environment import KanoodleEnvironment
 def validate_random_agent(environment_config: EnvironmentConfig, num_episodes: int, render: bool):
     environment = KanoodleEnvironment(environment_config)
 
-    _observation = environment.reset()
     reward_returns = []
     successes = []
     for _ in tqdm.tqdm(range(num_episodes)):
+        _observation = environment.reset()
         rewards = []
         is_finished = False
-
         if render:
             environment.render()
+            
         while not is_finished:
             action_confs = numpy.ones(len(environment.actions))
             _observation, reward, is_finished, info = environment.step(action_confs)
@@ -27,7 +27,6 @@ def validate_random_agent(environment_config: EnvironmentConfig, num_episodes: i
 
         successes.append(info["is_success"])
         reward_returns.append(sum(rewards))
-        environment.reset()
 
     print(f"successes: {100 * numpy.mean(successes)}% +/- {numpy.std(successes):.2f}")
     print(f"returns  : {numpy.mean(reward_returns):.2f} +/- {numpy.std(reward_returns):.2f}")
