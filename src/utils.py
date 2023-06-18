@@ -70,7 +70,7 @@ def action_confs_to_prob(action_confs: numpy.ndarray, invalid_actions: numpy.nda
     action_confs[invalid_actions] = 0.0
 
     if sum(action_confs) == 0.0:
-        action_confs[numpy.invert(invalid_actions)] = 1.0
+        action_confs[~invalid_actions] = 1.0
 
     return action_confs / sum(action_confs)
 

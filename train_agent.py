@@ -63,7 +63,9 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
         progress_bar=training_config.progress_bar,
     )
     now_string = str(datetime.now()).replace(" ", "_")
-    model.save(f"checkpoints/{now_string}.zip")
+    save_path = f"checkpoints/{now_string}.zip"
+    model.save(save_path)
+    print(f"saved model to {save_path}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 from typing import Tuple, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
+import torch
 from stable_baselines3.common.buffers import ReplayBuffer
 from stable_baselines3 import HerReplayBuffer
 
@@ -9,7 +10,7 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=500_000)
+    total_timesteps: float = Field(default=30_000)
 
     log_interval: int = Field(default=100)
     n_eval_episodes: int = Field(default=0)
@@ -23,15 +24,17 @@ class TrainingConfig(Immutable, BaseModel):
 
 class DDPGConfig(TrainingConfig):
     policy: str = Field(default="MultiInputPolicy")
-    policy_kwargs: str = Field(default={})
+    policy_kwargs: str = Field(default={
+        "activation_fn": torch.nn.ReLU
+    })
 
-    learning_starts: int = Field(default=0)
-    learning_rate: float = Field(default=1e-5)
-    train_freq: Tuple[int, str] = Field(default=(100, "step"))
-    batch_size: int = Field(default=64)
-    gamma: float = Field(default=0.99)
+    learning_starts: int = Field(default=128)
+    learning_rate: float = Field(default=5e-4)
+    train_freq: Tuple[int, str] = Field(default=(10, "step"))
+    batch_size: int = Field(default=128)
+    gamma: float = Field(default=0.95)
 
-    buffer_size: int = Field(default=100_000)
+    buffer_size: int = Field(default=1_000_000)
     optimize_memory_usage: bool = Field(default=False)
     replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
     replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
@@ -65,7 +68,7 @@ class EnvironmentConfig(BaseModel):
     complete_reward: float = Field(default=10.0)
     fail_reward: float = Field(default=-10.0)
     fill_reward: float = Field(default=0.0)
-    step_reward: float = Field(default=1.0)
+    step_reward: float = Field(default=0.0)
 
     solid_char: str = Field(default="*")
     empty_char: str = Field(default="o")

@@ -16,4 +16,10 @@ pieces = [
         ],
         color="green"
     ),
+    Piece(
+        [
+            [1, 1],
+        ],
+        color="yellow"
+    ),
 ]

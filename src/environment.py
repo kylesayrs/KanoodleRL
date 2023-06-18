@@ -24,6 +24,7 @@ class KanoodleEnvironment(Env):
 
         self.observation_space = spaces.Dict({
             "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
+            "board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
             "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
         })
         self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
@@ -41,8 +42,11 @@ class KanoodleEnvironment(Env):
 
     def step(self, action_confs: numpy.ndarray) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         # select action
+        #action_prob **= 1.5
         action_prob = action_confs_to_prob(action_confs, self.invalid_actions_mask)
         action_index = numpy.random.choice(list(range(len(action_confs))), p=action_prob)
+        #action_confs[self.invalid_actions_mask] = numpy.NINF
+        #action_index = numpy.argmax(action_confs)
         action = self.actions[action_index]
         piece_index = self.pieces_mask[action_index]
 
@@ -56,7 +60,7 @@ class KanoodleEnvironment(Env):
         observation = self.get_observation()
         reward = self.get_reward()
         is_finished = self.is_finished()
-        info = {}
+        info = {"is_success": self.is_success()}
 
         return observation, reward, is_finished, info
     
@@ -66,16 +70,24 @@ class KanoodleEnvironment(Env):
         available_pieces_mask[self.available_pieces] = 1.0
         return {
             "board": self.board.flatten(),
+            "board_image": self.board,
             "available_pieces_mask": available_pieces_mask
         }
+    
+
+    def is_success(self):
+        return self.board.all()
+    
+
+    def is_failure(self):
+        return self.invalid_actions_mask.all()
 
 
     def get_reward(self) -> float:
-        if self.board.all():
+        if self.is_success():
             return self.config.complete_reward
         
-        #elif self.is_finished():
-        elif self.invalid_actions_mask.all():
+        elif self.is_failure():
             return self.config.fail_reward
         
         else:
@@ -86,10 +98,7 @@ class KanoodleEnvironment(Env):
     
 
     def is_finished(self) -> bool:
-        return (
-            self.board.all() or
-            self.invalid_actions_mask.all()# or
-        )
+        return self.is_success() or self.is_failure()
             
 
     def get_unsolvable_actions_mask(self):
@@ -99,14 +108,14 @@ class KanoodleEnvironment(Env):
                 unsolvable_actions.append(True)
                 continue
 
-            invalid_actions_after_action = self.invalid_actions_mask.copy()
-            invalid_actions_after_action |= self.pieces_mask == action_piece_index
-            invalid_actions_after_action |= self.intersecting_actions_masks[action_index]
             board_after_action = self.board | action
             if board_after_action.all():
                 unsolvable_actions.append(False)
                 continue
-                
+
+            invalid_actions_after_action = self.invalid_actions_mask.copy()
+            invalid_actions_after_action |= self.pieces_mask == action_piece_index
+            invalid_actions_after_action |= self.intersecting_actions_masks[action_index]
             if invalid_actions_after_action.all():
                 unsolvable_actions.append(True)
                 continue
@@ -124,7 +133,7 @@ class KanoodleEnvironment(Env):
     
 
     def update_invalid_actions(self, action_index: Optional[int] = None, chosen_piece_index: Optional[int] = None) -> numpy.ndarray:
-        if action_index is None:
+        if action_index is None and chosen_piece_index is None:
             self.invalid_actions_mask = numpy.full((len(self.actions), ), False)
         
         else:
@@ -134,7 +143,7 @@ class KanoodleEnvironment(Env):
             # actions would intersect
             self.invalid_actions_mask |= self.intersecting_actions_masks[action_index]
 
-        # TODO: actions that lead to an unsolvable board
+        # actions that lead to an unsolvable board
         self.invalid_actions_mask |= self.get_unsolvable_actions_mask()
 
         return self.invalid_actions_mask
