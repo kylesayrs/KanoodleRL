@@ -11,7 +11,6 @@ def get_piece_input(environment: KanoodleEnvironment, reward: float):
         environment.pieces[piece_index].print()
     print(f"{''.join(['- '] * environment_config.board_shape[1])}")
     environment.render()
-    print(f"reward: {reward}")
 
     action_piece_index = None
     while action_piece_index == None:
@@ -64,13 +63,15 @@ def play_game(environment_config: EnvironmentConfig):
         observation, reward, is_finished, info = environment.step(action_confs)
         total_rewards += reward
 
-    print(f"reward: {reward}")
+    environment.render()
 
 
 if __name__ == "__main__":
     environment_config = EnvironmentConfig(
-        board_shape=(5, 5),
-        pieces_set_name="junior"
+        #board_shape=(5, 5),
+        #pieces_set_name="junior"
+        board_shape=(3, 3),
+        pieces_set_name="demo"
     )
 
     play_game(environment_config)

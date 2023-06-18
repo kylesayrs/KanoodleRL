@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import numpy
+import functools
 
 
 class Immutable:
@@ -72,3 +73,10 @@ def action_confs_to_prob(action_confs: numpy.ndarray, invalid_actions: numpy.nda
         action_confs[numpy.invert(invalid_actions)] = 1.0
 
     return action_confs / sum(action_confs)
+
+
+def get_fillable_spaces(actions, invalid_actions_mask) -> numpy.ndarray:
+    return numpy.array(list(functools.reduce(
+        numpy.bitwise_or,
+        actions[~invalid_actions_mask],
+    )), dtype=bool)

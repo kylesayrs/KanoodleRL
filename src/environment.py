@@ -7,7 +7,7 @@ from gym import Env, spaces
 
 from src.config import EnvironmentConfig
 from src.piece import Piece
-from src.utils import iterate_shape_2d, action_confs_to_prob
+from src.utils import iterate_shape_2d, action_confs_to_prob, get_fillable_spaces
 from pieces import load_pieces
 
 
@@ -20,7 +20,7 @@ class KanoodleEnvironment(Env):
         self.actions, self.pieces_mask = get_all_actions(
             self.config.board_shape, self.pieces
         )
-        self.all_intersecting_actions = get_all_intersecting_actions(self.actions)
+        self.intersecting_actions_masks = get_intersecting_actions_masks(self.actions)
 
         self.observation_space = spaces.Dict({
             "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
@@ -33,8 +33,7 @@ class KanoodleEnvironment(Env):
 
     def reset(self) -> None:
         self.board = numpy.zeros(self.config.board_shape, dtype=int)
-        self.available_pieces = list(range(len(self.pieces)))
-        self.invalid_actions_mask = numpy.array([False for _ in range(len(self.actions))])
+        self.invalid_actions_mask = self.update_invalid_actions()
         self.action_history = []
 
         return self.get_observation()
@@ -48,9 +47,8 @@ class KanoodleEnvironment(Env):
         piece_index = self.pieces_mask[action_index]
 
         # do action
-        assert not numpy.bitwise_and(self.board, action).any()
-        self.board = numpy.bitwise_or(self.board, action)
-        self.available_pieces.remove(piece_index)
+        assert not (self.board & action).any()
+        self.board |= action
         self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
         self.action_history.append((action, piece_index))
 
@@ -76,7 +74,8 @@ class KanoodleEnvironment(Env):
         if self.board.all():
             return self.config.complete_reward
         
-        elif self.is_finished():
+        #elif self.is_finished():
+        elif self.invalid_actions_mask.all():
             return self.config.fail_reward
         
         else:
@@ -89,34 +88,54 @@ class KanoodleEnvironment(Env):
     def is_finished(self) -> bool:
         return (
             self.board.all() or
-            self.invalid_actions_mask.all() or
-            not self._get_fillable_spaces().all()
+            self.invalid_actions_mask.all()# or
         )
+            
+
+    def get_unsolvable_actions_mask(self):
+        unsolvable_actions = []
+        for action_index, (action, action_piece_index) in enumerate(zip(self.actions, self.pieces_mask)):
+            if self.invalid_actions_mask[action_index]:
+                unsolvable_actions.append(True)
+                continue
+
+            invalid_actions_after_action = self.invalid_actions_mask.copy()
+            invalid_actions_after_action |= self.pieces_mask == action_piece_index
+            invalid_actions_after_action |= self.intersecting_actions_masks[action_index]
+            board_after_action = self.board | action
+            if board_after_action.all():
+                unsolvable_actions.append(False)
+                continue
+                
+            if invalid_actions_after_action.all():
+                unsolvable_actions.append(True)
+                continue
+
+            fillable_spaces_after_action = get_fillable_spaces(self.actions, invalid_actions_after_action)
+            if not (board_after_action | fillable_spaces_after_action).all():
+                unsolvable_actions.append(True)
+                continue
+            else:
+                unsolvable_actions.append(False)
+                continue
+
+        assert len(unsolvable_actions) == len(self.actions)
+        return numpy.array(unsolvable_actions)
     
 
-    def _get_fillable_spaces(self) -> numpy.ndarray:
-        fillable_board_spaces = numpy.array(list(functools.reduce(
-            numpy.bitwise_or,
-            self.actions[numpy.invert(self.invalid_actions_mask)],
-        )), dtype=bool)
+    def update_invalid_actions(self, action_index: Optional[int] = None, chosen_piece_index: Optional[int] = None) -> numpy.ndarray:
+        if action_index is None:
+            self.invalid_actions_mask = numpy.full((len(self.actions), ), False)
         
-        return numpy.bitwise_or(fillable_board_spaces, self.board)
-    
+        else:
+            # piece is not available
+            self.invalid_actions_mask |= self.pieces_mask == chosen_piece_index
 
-    def update_invalid_actions(self, action_index: int, chosen_piece_index: int) -> numpy.ndarray:
-        # piece is not available
-        self.invalid_actions_mask = numpy.bitwise_or(
-            self.invalid_actions_mask,
-            self.pieces_mask == chosen_piece_index,
-        )
+            # actions would intersect
+            self.invalid_actions_mask |= self.intersecting_actions_masks[action_index]
 
-        # actions would intersect
-        self.invalid_actions_mask = numpy.bitwise_or(
-            self.invalid_actions_mask,
-            self.all_intersecting_actions[action_index],
-        )
-
-        # TODO: action leads to an unsolvable board
+        # TODO: actions that lead to an unsolvable board
+        self.invalid_actions_mask |= self.get_unsolvable_actions_mask()
 
         return self.invalid_actions_mask
 
@@ -147,6 +166,11 @@ class KanoodleEnvironment(Env):
         print(f"is_finished: {self.is_finished()}")
 
 
+    @property
+    def available_pieces(self):
+        return numpy.unique(self.pieces_mask[~self.invalid_actions_mask])
+
+
     def render_action(self, action: numpy.ndarray, piece_index: int):
         action_history = self.action_history.copy()
         action_history.append((action, piece_index))
@@ -171,7 +195,7 @@ def get_all_actions(board_shape: Tuple[int, int], pieces: List[Piece]) -> Tuple[
     return numpy.array(actions), numpy.array(pieces_mask)
 
 
-def get_all_intersecting_actions(actions: List[numpy.ndarray]):
+def get_intersecting_actions_masks(actions: List[numpy.ndarray]):
     return [
         [
             action2[action1 == 1].any()

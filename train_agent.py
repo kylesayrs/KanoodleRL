@@ -70,8 +70,10 @@ if __name__ == "__main__":
     #training_config = PPOConfig()
     training_config = DDPGConfig()
     environment_config = EnvironmentConfig(
-        board_shape=(5, 5),
-        pieces_set_name="junior"
+        #board_shape=(5, 5),
+        #pieces_set_name="junior"
+        board_shape=(3, 3),
+        pieces_set_name="demo"
     )
 
     train_agent(training_config, environment_config)

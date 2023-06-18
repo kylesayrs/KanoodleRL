@@ -26,7 +26,7 @@ class DDPGConfig(TrainingConfig):
     policy_kwargs: str = Field(default={})
 
     learning_starts: int = Field(default=0)
-    learning_rate: float = Field(default=1e-4)
+    learning_rate: float = Field(default=1e-5)
     train_freq: Tuple[int, str] = Field(default=(100, "step"))
     batch_size: int = Field(default=64)
     gamma: float = Field(default=0.99)
@@ -63,7 +63,7 @@ class EnvironmentConfig(BaseModel):
     pieces_set_name: str = Field(default="standard")
 
     complete_reward: float = Field(default=10.0)
-    fail_reward: float = Field(default=-2.5)
+    fail_reward: float = Field(default=-10.0)
     fill_reward: float = Field(default=0.0)
     step_reward: float = Field(default=1.0)
 
