@@ -2,6 +2,9 @@ from typing import Tuple
 
 import numpy
 import functools
+import importlib
+
+from gym import Env
 
 
 class Immutable:
@@ -80,3 +83,23 @@ def get_fillable_spaces(actions, invalid_actions_mask) -> numpy.ndarray:
         numpy.bitwise_or,
         actions[~invalid_actions_mask],
     )), dtype=bool)
+
+
+def loadModelConfig(training_config: "TrainingConfig", **kwargs):
+    import src.config
+    
+    return getattr(src.config, f"{training_config.model_arch}Config")(**kwargs)
+
+def loadModel(config: "ModelConfig", environment: Env, save_path: str = None):
+    import stable_baselines3
+
+    model_class_name = config.__class__.__name__.replace("Config", "")
+    model_class = getattr(stable_baselines3, model_class_name)
+
+    model_kwargs = config.dict()
+    del model_kwargs["_frozen"]
+
+    return model_class(
+        env=environment,
+        **model_kwargs
+    )

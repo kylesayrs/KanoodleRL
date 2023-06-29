@@ -10,12 +10,9 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=1_000)#30_000)
+    total_timesteps: float = Field(default=200_000)
 
-    policy: str = Field(default="MultiInputPolicy")
-    policy_kwargs: str = Field(default={
-        "activation_fn": torch.nn.ReLU
-    })
+    model_arch: str = "DQN"
 
     log_interval: int = Field(default=10)
     n_eval_episodes: int = Field(default=0)
@@ -23,17 +20,23 @@ class TrainingConfig(Immutable, BaseModel):
 
     progress_bar: bool = Field(default=False)
 
+
+class ModelConfig(Immutable, BaseModel):
+    policy: str = Field(default="MultiInputPolicy")
+    policy_kwargs: str = Field(default={
+        "activation_fn": torch.nn.ReLU
+    })
+
     class Config:
         arbitrary_types_allowed = True
 
 
-class DDPGConfig(TrainingConfig):
+class DDPGConfig(ModelConfig):
     learning_starts: int = Field(default=128)
-    #learning_rate: float = Field(default=1e-6)
     learning_rate: float = Field(default=1e-4)
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
-    gamma: float = Field(default=0.99)
+    gamma: float = Field(default=0.90)
 
     buffer_size: int = Field(default=100_000)
     optimize_memory_usage: bool = Field(default=False)
@@ -44,7 +47,23 @@ class DDPGConfig(TrainingConfig):
     device: str = Field(default="cpu")
 
 
-class PPOConfig(TrainingConfig):
+class DQNConfig(ModelConfig):
+    learning_starts: int = Field(default=128)
+    learning_rate: float = Field(default=1e-4)
+    train_freq: Tuple[int, str] = Field(default=(10, "step"))
+    batch_size: int = Field(default=128)
+    gamma: float = Field(default=0.90)
+
+    buffer_size: int = Field(default=100_000)
+    optimize_memory_usage: bool = Field(default=False)
+    replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
+    replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
+
+    verbose: int = Field(default=1)
+    device: str = Field(default="cpu")
+
+
+class PPOConfig(ModelConfig):
     learning_rate: float = Field(default=7e-6)
     n_steps: float = Field(default=32, description="The number of steps to run for each environment per update")
     batch_size: int = Field(default=8)

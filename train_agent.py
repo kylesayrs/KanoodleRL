@@ -1,64 +1,27 @@
 from datetime import datetime
 
-from stable_baselines3 import PPO, DDPG, HerReplayBuffer
+from stable_baselines3 import PPO, DDPG, DQN
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
 
-from src.config import EnvironmentConfig, TrainingConfig, PPOConfig, DDPGConfig
+from src.config import EnvironmentConfig, TrainingConfig, ModelConfig
 from src.environment import KanoodleEnvironment
+from src.utils import loadModel, loadModelConfig
 
 
-def train_agent(training_config: TrainingConfig, environment_config: EnvironmentConfig):
+def train_agent(
+    training_config: TrainingConfig,
+    model_config: ModelConfig,
+    environment_config: EnvironmentConfig
+):
     environment = make_vec_env(
         KanoodleEnvironment,
         env_kwargs={"environment_config": environment_config},
         n_envs=training_config.n_envs
     )
 
-    """
-    if isinstance(environment_config.replay_buffer_class, HerReplayBuffer):
-        replay_buffer_kwargs = training_config.replay_buffer_kwargs.update({
-            "buffer_size": training_config.buffer_size,
-            "observation_space": environment.observation_space,
-            "action_space": environment.action_space,
-            "env": environment
-        })
-    """
-
-    if isinstance(training_config, PPOConfig):
-        model = PPO(
-            training_config.policy,
-            environment,
-            policy_kwargs=training_config.policy_kwargs,
-            learning_rate=training_config.learning_rate,
-            n_steps=training_config.n_steps,
-            batch_size=training_config.batch_size,
-            n_epochs=training_config.n_epochs,
-            gamma=training_config.gamma,
-            gae_lambda=training_config.gae_lambda,
-            clip_range=training_config.clip_range,
-            normalize_advantage=training_config.normalize_advantage,
-            verbose=training_config.verbose,
-            device=training_config.device,
-        )
-
-    elif isinstance(training_config, DDPGConfig):
-        model = DDPG(
-            training_config.policy,
-            environment,
-            policy_kwargs=training_config.policy_kwargs,
-            learning_rate=training_config.learning_rate,
-            train_freq=training_config.train_freq,
-            batch_size=training_config.batch_size,
-            gamma=training_config.gamma,
-            buffer_size=training_config.buffer_size,
-            optimize_memory_usage=training_config.optimize_memory_usage,
-            replay_buffer_class=training_config.replay_buffer_class,
-            replay_buffer_kwargs=training_config.replay_buffer_kwargs,
-            verbose=training_config.verbose,
-            device=training_config.device,
-        )
+    model = loadModel(model_config, environment)
 
     model.learn(
         total_timesteps=training_config.total_timesteps,
@@ -78,8 +41,8 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
 
 
 if __name__ == "__main__":
-    #training_config = PPOConfig()
-    training_config = DDPGConfig()
+    training_config = TrainingConfig()
+    model_config = loadModelConfig(training_config)
     environment_config = EnvironmentConfig()
 
-    train_agent(training_config, environment_config)
+    train_agent(training_config, model_config, environment_config)

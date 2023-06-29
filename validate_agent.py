@@ -4,7 +4,7 @@ import numpy
 
 from stable_baselines3 import PPO, DDPG
 
-from src.config import TrainingConfig, DDPGConfig, PPOConfig, EnvironmentConfig
+from src.config import TrainingConfig, DDPGConfig, PPOConfig, DQNConfig, EnvironmentConfig
 from src.environment import KanoodleEnvironment
 
 
@@ -54,7 +54,8 @@ if __name__ == "__main__":
     checkpoint_path = sys.argv[1]
 
     #training_config = PPOConfig()
-    training_config = DDPGConfig()
+    #training_config = DDPGConfig()
+    training_config = DQNConfig()
     environment_config = EnvironmentConfig()
 
     validate_agent(

@@ -32,7 +32,8 @@ class KanoodleEnvironment(Env):
             #"board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
             "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
         })
-        self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
+        #self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
+        self.action_space = spaces.Discrete(len(self.actions))
 
         self.reset()
         
@@ -45,20 +46,19 @@ class KanoodleEnvironment(Env):
         return self.get_observation()
 
 
-    def step(self, action_confs: numpy.ndarray) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
-        #print(action_confs)
-        action_prob = action_confs_to_prob(action_confs, self.invalid_actions_mask)
-        #action_index = numpy.random.choice(list(range(len(action_prob))), p=action_prob)
-        action_index = numpy.argmax(action_prob)
+    def step(self, action_index: int) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         action = self.actions[action_index]
         piece_index = self.pieces_mask[action_index]
-        #print(action_prob)
 
-        # do action
-        assert not (self.board & action).any()
-        self.board |= action
-        self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
-        self.action_history.append((action, piece_index))
+        if self.invalid_actions_mask[action_index]:
+            self.invalid_actions_mask.fill(True)
+
+        else:
+            # do action
+            assert not (self.board & action).any()
+            self.board |= action
+            self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
+            self.action_history.append((action, piece_index))
 
         # return results
         observation = self.get_observation()
