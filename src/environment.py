@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Dict, Any
+from typing import List, Tuple, Optional, Dict, Any, Union
 
 import numpy
 import functools
@@ -7,13 +7,14 @@ from gym import Env, spaces
 
 from src.config import EnvironmentConfig
 from src.piece import Piece
-from src.utils import iterate_shape_2d, action_confs_to_prob, get_fillable_spaces
+from src.utils import iterate_shape_2d, action_confs_to_prob, get_fillable_spaces, rand_argmax
 from pieces import load_pieces
 
 
 class KanoodleEnvironment(Env):
     def __init__(self, environment_config: EnvironmentConfig):
         super().__init__()
+        self.validate_config(environment_config)
         self.config = environment_config
 
         # load game
@@ -32,10 +33,18 @@ class KanoodleEnvironment(Env):
             #"board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
             "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
         })
-        #self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
-        self.action_space = spaces.Discrete(len(self.actions))
+
+        if self.config.discrete:
+            self.action_space = spaces.Discrete(len(self.actions))
+        else:
+            self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
 
         self.reset()
+
+
+    def validate_config(self, config):
+        if config.discrete and config.prevent_invalid_actions:
+            raise ValueError("Cannot prevent invalid actions for discrete action space") 
         
 
     def reset(self) -> None:
@@ -46,15 +55,25 @@ class KanoodleEnvironment(Env):
         return self.get_observation()
 
 
-    def step(self, action_index: int) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
+    def step(self, model_output: Union[int, numpy.ndarray]) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
+        if self.config.discrete:
+            action_index = model_output
+        else:
+            #action_prob = action_confs_to_prob(model_output, self.invalid_actions_mask)
+            #action_index = numpy.argmax(action_prob)
+            if self.config.prevent_invalid_actions:
+                model_output[self.invalid_actions_mask] = numpy.NINF
+            action_index = rand_argmax(model_output)
+
         action = self.actions[action_index]
         piece_index = self.pieces_mask[action_index]
 
         if self.invalid_actions_mask[action_index]:
+            # selected invalid action
             self.invalid_actions_mask.fill(True)
 
         else:
-            # do action
+            # do valid action
             assert not (self.board & action).any()
             self.board |= action
             self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
@@ -148,7 +167,8 @@ class KanoodleEnvironment(Env):
             self.invalid_actions_mask |= self._intersecting_actions_masks[action_index]
 
         # actions that lead to an unsolvable board
-        self.invalid_actions_mask |= self.get_unsolvable_actions_mask()
+        if self.config.calc_unsolvable:
+            self.invalid_actions_mask |= self.get_unsolvable_actions_mask()
 
         return self.invalid_actions_mask
 

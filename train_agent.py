@@ -7,7 +7,7 @@ from stable_baselines3.common.monitor import Monitor
 
 from src.config import EnvironmentConfig, TrainingConfig, ModelConfig
 from src.environment import KanoodleEnvironment
-from src.utils import loadModel, loadModelConfig
+from src.utils import load_model, load_model_config
 
 
 def train_agent(
@@ -21,7 +21,7 @@ def train_agent(
         n_envs=training_config.n_envs
     )
 
-    model = loadModel(model_config, environment)
+    model = load_model(model_config, environment)
 
     model.learn(
         total_timesteps=training_config.total_timesteps,
@@ -30,7 +30,7 @@ def train_agent(
             Monitor(KanoodleEnvironment(environment_config)),
             n_eval_episodes=training_config.n_eval_episodes,
             eval_freq=training_config.eval_freq,
-            render=True,
+            render=training_config.eval_render,
         ) if training_config.n_eval_episodes > 0 else None,
         progress_bar=training_config.progress_bar,
     )
@@ -42,7 +42,7 @@ def train_agent(
 
 if __name__ == "__main__":
     training_config = TrainingConfig()
-    model_config = loadModelConfig(training_config)
+    model_config = load_model_config(training_config)
     environment_config = EnvironmentConfig()
 
     train_agent(training_config, model_config, environment_config)

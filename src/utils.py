@@ -4,6 +4,8 @@ import numpy
 import functools
 import importlib
 
+import stable_baselines3
+from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
 from gym import Env
 
 
@@ -85,21 +87,55 @@ def get_fillable_spaces(actions, invalid_actions_mask) -> numpy.ndarray:
     )), dtype=bool)
 
 
-def loadModelConfig(training_config: "TrainingConfig", **kwargs):
+def load_model_config(training_config: "TrainingConfig", **kwargs):
     import src.config
     
     return getattr(src.config, f"{training_config.model_arch}Config")(**kwargs)
 
-def loadModel(config: "ModelConfig", environment: Env, save_path: str = None):
-    import stable_baselines3
 
+def load_model(config: "ModelConfig", environment: DummyVecEnv, save_path: str = None):
     model_class_name = config.__class__.__name__.replace("Config", "")
     model_class = getattr(stable_baselines3, model_class_name)
 
-    model_kwargs = config.dict()
-    del model_kwargs["_frozen"]
+    if not save_path:
+        model_kwargs = config.dict()
+        del model_kwargs["_frozen"]
 
-    return model_class(
-        env=environment,
-        **model_kwargs
+        if "action_noise" in model_kwargs:
+            model_kwargs["action_noise"] = make_action_noise(model_kwargs, environment)
+            del model_kwargs["action_noise_mu"]
+            del model_kwargs["action_noise_sigma"]
+
+        return model_class(
+            env=environment,
+            **model_kwargs
+        )
+    
+    else:
+        return model_class.load(
+            save_path,
+            env=environment,
+        )
+
+
+def make_action_noise(model_kwargs, environment):
+    if model_kwargs["action_noise"] is None:
+        return None
+
+    action_noise_class_name = f"{model_kwargs['action_noise']}ActionNoise"
+    import stable_baselines3.common.noise as SB3Noise
+    action_noise_class = getattr(SB3Noise, action_noise_class_name)
+    
+    env_actions = environment.get_attr("actions")[0]
+
+    action_space = numpy.full((len(env_actions), ), 1.0)
+    mu = action_space * model_kwargs["action_noise_mu"]
+    sigma = action_space * model_kwargs["action_noise_sigma"]
+    
+    return action_noise_class(mu, sigma)
+
+
+def rand_argmax(array):
+    return numpy.random.choice(
+        numpy.where(array == array.max())[0]
     )

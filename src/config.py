@@ -3,20 +3,21 @@ from pydantic import BaseModel, Field
 
 import torch
 from stable_baselines3.common.buffers import ReplayBuffer
-from stable_baselines3 import HerReplayBuffer
+from stable_baselines3.common.noise import NormalActionNoise
 
 from src.utils import Immutable
 
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=200_000)
+    total_timesteps: float = Field(default=15_000)
 
-    model_arch: str = "DQN"
+    model_arch: str = "DDPG"
 
     log_interval: int = Field(default=10)
     n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
+    eval_render: bool = Field(default=False)
 
     progress_bar: bool = Field(default=False)
 
@@ -27,24 +28,28 @@ class ModelConfig(Immutable, BaseModel):
         "activation_fn": torch.nn.ReLU
     })
 
+    verbose: int = Field(default=2)
+    device: str = Field(default="cpu")
+
     class Config:
         arbitrary_types_allowed = True
 
 
 class DDPGConfig(ModelConfig):
     learning_starts: int = Field(default=128)
-    learning_rate: float = Field(default=1e-4)
+    learning_rate: float = Field(default=1e-5)
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
     gamma: float = Field(default=0.90)
+
+    action_noise: Optional[str] = Field(default="Normal")
+    action_noise_mu: float = Field(default=0.0)
+    action_noise_sigma: float = Field(default=0.2)
 
     buffer_size: int = Field(default=100_000)
     optimize_memory_usage: bool = Field(default=False)
     replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
     replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
-
-    verbose: int = Field(default=1)
-    device: str = Field(default="cpu")
 
 
 class DQNConfig(ModelConfig):
@@ -59,9 +64,6 @@ class DQNConfig(ModelConfig):
     replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
     replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
 
-    verbose: int = Field(default=1)
-    device: str = Field(default="cpu")
-
 
 class PPOConfig(ModelConfig):
     learning_rate: float = Field(default=7e-6)
@@ -74,13 +76,14 @@ class PPOConfig(ModelConfig):
     clip_range: float = Field(default=0.2)
     normalize_advantage: bool = Field(default=True)
 
-    verbose: int = Field(default=1)
-    device: str = Field(default="cpu")
-
 
 class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(3, 3))
     pieces_set_name: str = Field(default="demo")
+
+    discrete: bool = Field(default=False)
+    prevent_invalid_actions: bool = Field(default=False)
+    calc_unsolvable: bool = Field(default=False)
 
     complete_reward: float = Field(default=10.0)
     fail_reward: float = Field(default=-10.0)
