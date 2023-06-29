@@ -108,7 +108,7 @@ def load_model(config: "ModelConfig", environment: DummyVecEnv, save_path: str =
 
         return model_class(
             env=environment,
-            **model_kwargs
+            **model_kwargs,
         )
     
     else:
