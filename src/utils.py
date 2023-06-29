@@ -62,7 +62,7 @@ def iterate_shape_2d(board_shape: Tuple[int, int], shape_variant: numpy.ndarray)
 
 def action_confs_to_prob(action_confs: numpy.ndarray, invalid_actions: numpy.ndarray):
     """
-    TODO: reduce runtime
+    TODO: reduce runtime a little
     """
     assert (action_confs >= 0).all()
     action_confs = action_confs.copy()

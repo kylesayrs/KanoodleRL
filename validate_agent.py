@@ -12,6 +12,7 @@ def validate_agent(
     checkpoint_path: str,
     training_config: TrainingConfig,
     environment_config: EnvironmentConfig,
+    greedy_policy: bool = False,
     num_episodes: int = 100,
     render: bool = True,
 ):
@@ -32,17 +33,15 @@ def validate_agent(
         observation = environment.reset()
         rewards = []
         is_finished = False
-        if render:
-            environment.render()
 
         while not is_finished:
             action_confs, _states = model.predict(observation)
-            print(action_confs)
             observation, reward, is_finished, info = environment.step(action_confs)
 
             rewards.append(reward)
-            if render:
-                environment.render()
+            
+        if render:
+            environment.render()
         
         successes.append(info["is_success"])
         reward_returns.append(sum(rewards))
@@ -54,15 +53,14 @@ def validate_agent(
 if __name__ == "__main__":
     checkpoint_path = sys.argv[1]
 
+    #training_config = PPOConfig()
     training_config = DDPGConfig()
-    environment_config = EnvironmentConfig(
-        board_shape=(3, 3),
-        pieces_set_name="demo",
-    )
+    environment_config = EnvironmentConfig()
 
     validate_agent(
         checkpoint_path,
         training_config,
         environment_config,
-        num_episodes=1_000, render=True
+        num_episodes=1_000,
+        render=True,
     )

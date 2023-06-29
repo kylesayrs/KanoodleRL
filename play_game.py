@@ -67,11 +67,6 @@ def play_game(environment_config: EnvironmentConfig):
 
 
 if __name__ == "__main__":
-    environment_config = EnvironmentConfig(
-        #board_shape=(5, 5),
-        #pieces_set_name="junior"
-        board_shape=(3, 3),
-        pieces_set_name="demo"
-    )
+    environment_config = EnvironmentConfig()
 
     play_game(environment_config)

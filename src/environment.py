@@ -16,15 +16,20 @@ class KanoodleEnvironment(Env):
         super().__init__()
         self.config = environment_config
 
+        # load game
+        self.board = numpy.zeros(self.config.board_shape, dtype=int)
         self.pieces = load_pieces(environment_config.pieces_set_name)
         self.actions, self.pieces_mask = get_all_actions(
             self.config.board_shape, self.pieces
         )
-        self.intersecting_actions_masks = get_intersecting_actions_masks(self.actions)
+
+        # precomputed values
+        self._intersecting_actions_masks = get_intersecting_actions_masks(self.actions)
+        self._initial_invalid_actions = self.update_invalid_actions()
 
         self.observation_space = spaces.Dict({
             "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
-            "board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
+            #"board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
             "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
         })
         self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
@@ -34,20 +39,20 @@ class KanoodleEnvironment(Env):
 
     def reset(self) -> None:
         self.board = numpy.zeros(self.config.board_shape, dtype=int)
-        self.invalid_actions_mask = self.update_invalid_actions()
+        self.invalid_actions_mask = self._initial_invalid_actions.copy()
         self.action_history = []
 
         return self.get_observation()
 
 
     def step(self, action_confs: numpy.ndarray) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
-        # select action
+        #print(action_confs)
         action_prob = action_confs_to_prob(action_confs, self.invalid_actions_mask)
-        action_index = numpy.random.choice(list(range(len(action_confs))), p=action_prob)
-        #action_confs[self.invalid_actions_mask] = numpy.NINF
-        #action_index = numpy.argmax(action_confs)
+        #action_index = numpy.random.choice(list(range(len(action_prob))), p=action_prob)
+        action_index = numpy.argmax(action_prob)
         action = self.actions[action_index]
         piece_index = self.pieces_mask[action_index]
+        #print(action_prob)
 
         # do action
         assert not (self.board & action).any()
@@ -69,7 +74,7 @@ class KanoodleEnvironment(Env):
         available_pieces_mask[self.available_pieces] = 1.0
         return {
             "board": self.board.flatten(),
-            "board_image": self.board,
+            #"board_image": self.board,
             "available_pieces_mask": available_pieces_mask
         }
     
@@ -114,7 +119,7 @@ class KanoodleEnvironment(Env):
 
             invalid_actions_after_action = self.invalid_actions_mask.copy()
             invalid_actions_after_action |= self.pieces_mask == action_piece_index
-            invalid_actions_after_action |= self.intersecting_actions_masks[action_index]
+            invalid_actions_after_action |= self._intersecting_actions_masks[action_index]
             if invalid_actions_after_action.all():
                 unsolvable_actions.append(True)
                 continue
@@ -140,7 +145,7 @@ class KanoodleEnvironment(Env):
             self.invalid_actions_mask |= self.pieces_mask == chosen_piece_index
 
             # actions would intersect
-            self.invalid_actions_mask |= self.intersecting_actions_masks[action_index]
+            self.invalid_actions_mask |= self._intersecting_actions_masks[action_index]
 
         # actions that lead to an unsolvable board
         self.invalid_actions_mask |= self.get_unsolvable_actions_mask()
@@ -169,7 +174,7 @@ class KanoodleEnvironment(Env):
                     print(colored(self.config.empty_char, color="white"), end=" ")
             print()
         
-        print(self.available_pieces)
+        print(self.get_observation()["available_pieces_mask"])
         print(f"reward: {self.get_reward()}")
         print(f"is_finished: {self.is_finished()}")
 

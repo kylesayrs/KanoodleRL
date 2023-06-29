@@ -14,16 +14,15 @@ def validate_random_agent(environment_config: EnvironmentConfig, num_episodes: i
         _observation = environment.reset()
         rewards = []
         is_finished = False
-        if render:
-            environment.render()
-            
+
         while not is_finished:
             action_confs = numpy.ones(len(environment.actions))
             _observation, reward, is_finished, info = environment.step(action_confs)
 
             rewards.append(reward)
-            if render:
-                environment.render()
+            
+        if render:
+            environment.render()
 
         successes.append(info["is_success"])
         reward_returns.append(sum(rewards))
@@ -33,9 +32,10 @@ def validate_random_agent(environment_config: EnvironmentConfig, num_episodes: i
 
 
 if __name__ == "__main__":
-    environment_config = EnvironmentConfig(
-        board_shape=(3, 3),
-        pieces_set_name="demo",
-    )
+    environment_config = EnvironmentConfig()
 
-    validate_random_agent(environment_config, num_episodes=10_000, render=False)
+    validate_random_agent(
+        environment_config,
+        num_episodes=1_000,
+        render=False
+    )

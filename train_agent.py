@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from stable_baselines3 import PPO, DDPG
+from stable_baselines3 import PPO, DDPG, HerReplayBuffer
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.monitor import Monitor
@@ -16,13 +16,22 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
         n_envs=training_config.n_envs
     )
 
+    """
+    if isinstance(environment_config.replay_buffer_class, HerReplayBuffer):
+        replay_buffer_kwargs = training_config.replay_buffer_kwargs.update({
+            "buffer_size": training_config.buffer_size,
+            "observation_space": environment.observation_space,
+            "action_space": environment.action_space,
+            "env": environment
+        })
+    """
+
     if isinstance(training_config, PPOConfig):
         model = PPO(
             training_config.policy,
             environment,
             policy_kwargs=training_config.policy_kwargs,
             learning_rate=training_config.learning_rate,
-            learning_starts=training_config.learning_starts,
             n_steps=training_config.n_steps,
             batch_size=training_config.batch_size,
             n_epochs=training_config.n_epochs,
@@ -71,11 +80,6 @@ def train_agent(training_config: TrainingConfig, environment_config: Environment
 if __name__ == "__main__":
     #training_config = PPOConfig()
     training_config = DDPGConfig()
-    environment_config = EnvironmentConfig(
-        #board_shape=(5, 5),
-        #pieces_set_name="junior"
-        board_shape=(3, 3),
-        pieces_set_name="demo"
-    )
+    environment_config = EnvironmentConfig()
 
     train_agent(training_config, environment_config)

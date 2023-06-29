@@ -10,9 +10,14 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=30_000)
+    total_timesteps: float = Field(default=1_000)#30_000)
 
-    log_interval: int = Field(default=100)
+    policy: str = Field(default="MultiInputPolicy")
+    policy_kwargs: str = Field(default={
+        "activation_fn": torch.nn.ReLU
+    })
+
+    log_interval: int = Field(default=10)
     n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
 
@@ -23,34 +28,27 @@ class TrainingConfig(Immutable, BaseModel):
 
 
 class DDPGConfig(TrainingConfig):
-    policy: str = Field(default="MultiInputPolicy")
-    policy_kwargs: str = Field(default={
-        "activation_fn": torch.nn.ReLU
-    })
-
     learning_starts: int = Field(default=128)
-    learning_rate: float = Field(default=5e-4)
+    #learning_rate: float = Field(default=1e-6)
+    learning_rate: float = Field(default=1e-4)
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
-    gamma: float = Field(default=0.95)
+    gamma: float = Field(default=0.99)
 
-    buffer_size: int = Field(default=1_000_000)
+    buffer_size: int = Field(default=100_000)
     optimize_memory_usage: bool = Field(default=False)
     replay_buffer_class: Optional[ReplayBuffer] = Field(default=None)
     replay_buffer_kwargs: Optional[Dict[str, Any]] = Field(default=None)
 
-    verbose: int = Field(default=2)
+    verbose: int = Field(default=1)
     device: str = Field(default="cpu")
 
 
 class PPOConfig(TrainingConfig):
-    policy: str = Field(default="MultiInputPolicy")
-    policy_kwargs: str = Field(default={})
-
-    learning_rate: float = Field(default=3e-6)
-    n_steps: float = Field(default=1024, description="The number of steps to run for each environment per update")
-    batch_size: int = Field(default=64)
-    n_epochs: int = Field(default=15)
+    learning_rate: float = Field(default=7e-6)
+    n_steps: float = Field(default=32, description="The number of steps to run for each environment per update")
+    batch_size: int = Field(default=8)
+    n_epochs: int = Field(default=5)
 
     gamma: float = Field(default=0.99)
     gae_lambda: float = Field(default=0.95)
@@ -62,8 +60,8 @@ class PPOConfig(TrainingConfig):
 
 
 class EnvironmentConfig(BaseModel):
-    board_shape: Tuple[int, int] = Field(default=(5, 11))
-    pieces_set_name: str = Field(default="standard")
+    board_shape: Tuple[int, int] = Field(default=(3, 3))
+    pieces_set_name: str = Field(default="demo")
 
     complete_reward: float = Field(default=10.0)
     fail_reward: float = Field(default=-10.0)
