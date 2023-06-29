@@ -10,11 +10,12 @@ from src.utils import Immutable
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=1000_000)  # demo: 15k
+    total_timesteps: float = Field(default=200_000)  # demo: 15k
 
-    model_arch: str = "DDPG"
+    model_arch: str = "DQN"
 
-    log_interval: int = Field(default=1)
+    wandb_mode: str = Field(default="disabled")
+    log_interval: int = Field(default=1000)
     n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
     eval_render: bool = Field(default=False)
@@ -55,14 +56,14 @@ class DDPGConfig(ModelConfig):
 
 class DQNConfig(ModelConfig):
     learning_starts: int = Field(default=128)
-    learning_rate: float = Field(default=1e-4)  # demo: 1e-5
+    learning_rate: float = Field(default=1e-5)  # demo: 1e-4
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
-    gamma: float = Field(default=0.90)
+    gamma: float = Field(default=0.99)
 
-    exploration_fraction: float = Field(default=1.0)
-    exploration_initial_eps: float = Field(1.0)
-    exploration_final_eps: float = Field(0.05)
+    exploration_fraction: float = Field(default=0.3)
+    exploration_initial_eps: float = Field(default=1.0)
+    exploration_final_eps: float = Field(default=0.05)
 
     buffer_size: int = Field(default=100_000)
     optimize_memory_usage: bool = Field(default=False)
@@ -83,12 +84,12 @@ class PPOConfig(ModelConfig):
 
 
 class EnvironmentConfig(BaseModel):
-    board_shape: Tuple[int, int] = Field(default=(5, 5))
-    pieces_set_name: str = Field(default="junior")
+    board_shape: Tuple[int, int] = Field(default=(3, 3))
+    pieces_set_name: str = Field(default="demo")
 
-    discrete: bool = Field(default=False)
-    prevent_invalid_actions: bool = Field(default=True)
-    calc_unsolvable: bool = Field(default=True)
+    discrete: bool = Field(default=True)
+    prevent_invalid_actions: bool = Field(default=False)
+    calc_unsolvable: bool = Field(default=False)
 
     complete_reward: float = Field(default=10.0)
     fail_reward: float = Field(default=-10.0)

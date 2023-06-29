@@ -20,8 +20,9 @@ def init_wandb(
 ):
     wandb.init(
         project="KanoodleRL",
-        mode="online",
-        sync_tensorboard=True,
+        mode=training_config.wandb_mode,
+        tensorboard=model_config.tensorboard_log,
+        sync_tensorboard=False,
         config={
             "training_config": training_config.dict(),
             "model_config": model_config.dict(),
@@ -40,19 +41,19 @@ def makeEvalCallback(training_config: TrainingConfig):
 
 
 def makeCallbacks(training_config: TrainingConfig, model_config: ModelConfig):
-    wandb_callback = WandbCallback(
-        verbose=model_config.verbose,
-    )
+    callbacks = []
+
+    if training_config.wandb_mode != "disabled":
+        callbacks.append(WandbCallback(
+            verbose=model_config.verbose,
+        ))
 
     if training_config.n_eval_episodes > 0:
-        return [
-            wandb_callback,
-            makeEvalCallback(
-                training_config
-            )
-        ]
+        callbacks.append(makeEvalCallback(
+            training_config
+        ))
 
-    return wandb_callback
+    return callbacks
 
 
 def train_agent(
