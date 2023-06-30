@@ -29,23 +29,24 @@ class KanoodleEnvironment(Env):
         self._initial_invalid_actions = self.update_invalid_actions()
 
         self.observation_space = spaces.Dict({
-            "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
+            #"board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
             #"board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
-            "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
+            "action_history_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
+            #"available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
+            "invalid_actions_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
         })
 
         if self.config.discrete:
             self.action_space = spaces.Discrete(len(self.actions))
         else:
-            self.action_space = spaces.Box(0.0, 1.0, (len(self.actions), ))
+            self.action_space = spaces.Box(0.0, 100, (len(self.actions), ))
 
         self.reset()
 
 
     def validate_config(self, config):
-        if config.discrete and config.prevent_invalid_actions:
-            raise ValueError("Cannot prevent invalid actions for discrete action space") 
-        
+        pass
+
 
     def reset(self) -> None:
         self.board = numpy.zeros(self.config.board_shape, dtype=int)
@@ -53,31 +54,42 @@ class KanoodleEnvironment(Env):
         self.action_history = []
 
         return self.get_observation()
+    
 
-
-    def step(self, model_output: Union[int, numpy.ndarray]) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
+    def get_action(self, model_output):
         if self.config.discrete:
             action_index = model_output
+            if self.config.prevent_invalid_actions and self.invalid_actions_mask[action_index]:
+                action_index = numpy.random.choice(
+                    range(len(self.actions)),
+                    p=action_confs_to_prob(numpy.ones((len(self.actions), )), self.invalid_actions_mask)
+                )
         else:
-            #action_prob = action_confs_to_prob(model_output, self.invalid_actions_mask)
-            #action_index = numpy.argmax(action_prob)
             if self.config.prevent_invalid_actions:
                 model_output[self.invalid_actions_mask] = numpy.NINF
             action_index = rand_argmax(model_output)
+            #action_index = numpy.argmax(model_output)
 
-        action = self.actions[action_index]
-        piece_index = self.pieces_mask[action_index]
+        return (
+            action_index,
+            self.actions[action_index],
+            self.pieces_mask[action_index]
+        )
 
+
+    def step(self, model_output: Union[int, numpy.ndarray]) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
+        action_index, action, piece_index = self.get_action(model_output)
+
+        # punish invalid action
         if self.invalid_actions_mask[action_index]:
-            # selected invalid action
             self.invalid_actions_mask.fill(True)
 
+        # do valid action
         else:
-            # do valid action
             assert not (self.board & action).any()
             self.board |= action
             self.invalid_actions_mask = self.update_invalid_actions(action_index, piece_index)
-            self.action_history.append((action, piece_index))
+            self.action_history.append(action_index)
 
         # return results
         observation = self.get_observation()
@@ -92,9 +104,11 @@ class KanoodleEnvironment(Env):
         available_pieces_mask = numpy.zeros(len(self.pieces), dtype=numpy.float32)
         available_pieces_mask[self.available_pieces] = 1.0
         return {
-            "board": self.board.flatten(),
+            #"board": self.board.flatten(),
             #"board_image": self.board,
-            "available_pieces_mask": available_pieces_mask
+            "action_history_mask": self.get_action_history_mask(),
+            #"available_pieces_mask": available_pieces_mask,
+            "invalid_actions_mask": self.invalid_actions_mask
         }
     
 
@@ -151,7 +165,6 @@ class KanoodleEnvironment(Env):
                 unsolvable_actions.append(False)
                 continue
 
-        assert len(unsolvable_actions) == len(self.actions)
         return numpy.array(unsolvable_actions)
     
 
@@ -180,13 +193,19 @@ class KanoodleEnvironment(Env):
             raise ValueError(f"Unknown render mode {mode}")
 
 
-    def render_human(self, action_history: Optional[List[Tuple[numpy.ndarray, int]]] = None) -> None:
+    def render_human(
+        self,
+        action_history: Optional[List[int]] = None,
+        show_observation: bool = True
+    ) -> None:
         action_history = self.action_history if action_history is None else action_history
 
         for y in range(self.config.board_shape[0]):
             for x in range(self.config.board_shape[1]):
-                for action_mask, piece_index in action_history:
-                    if action_mask[y, x]:
+                for action_index in action_history:
+                    action = self.actions[action_index]
+                    piece_index = self.pieces_mask[action_index]
+                    if action[y, x]:
                         color = self.pieces[piece_index].color
                         print(colored(self.config.solid_char, color=color), end=" ")
                         break
@@ -194,9 +213,14 @@ class KanoodleEnvironment(Env):
                     print(colored(self.config.empty_char, color="white"), end=" ")
             print()
         
-        print(self.get_observation()["available_pieces_mask"])
-        print(f"reward: {self.get_reward()}")
-        print(f"is_finished: {self.is_finished()}")
+        if show_observation:
+            observation = self.get_observation()
+            #print(observation["action_history_mask"])
+            #print(observation["available_pieces_mask"])
+            print(f"reward: {self.get_reward()}")
+            print(f"is_finished: {self.is_finished()}")
+
+        print("-----------------")
 
 
     @property
@@ -204,10 +228,17 @@ class KanoodleEnvironment(Env):
         return numpy.unique(self.pieces_mask[~self.invalid_actions_mask])
 
 
-    def render_action(self, action: numpy.ndarray, piece_index: int):
+    def render_action(self, action_index: int):
         action_history = self.action_history.copy()
-        action_history.append((action, piece_index))
+        action_history.append(action_index)
         self.render_human(action_history)
+
+
+    def get_action_history_mask(self):
+        action_history_mask = numpy.zeros((len(self.actions)), dtype=int)
+        action_history_mask[self.action_history] = 1
+
+        return action_history_mask
 
 
 def get_all_actions(board_shape: Tuple[int, int], pieces: List[Piece]) -> Tuple[numpy.ndarray, numpy.ndarray]:

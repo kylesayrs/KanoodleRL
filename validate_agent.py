@@ -22,6 +22,8 @@ def validate_agent(
 
     reward_returns = []
     successes = []
+    unique_success_masks = []
+    unique_success_histories = []
     for _ in tqdm.tqdm(range(num_episodes)):
         observation = environment.reset()
         rewards = []
@@ -38,12 +40,19 @@ def validate_agent(
         
         successes.append(info["is_success"])
         reward_returns.append(sum(rewards))
+        if info["is_success"]:
+            action_history_mask = environment.get_action_history_mask().tolist()
+            if action_history_mask not in unique_success_masks:
+                unique_success_masks.append(action_history_mask)
+                unique_success_histories.append(environment.action_history)
 
-        # TODO: show all successes
-
-    print(f"successes: {100 * numpy.mean(successes)}% +/- {numpy.std(successes):.2f}")
-    print(f"returns  : {numpy.mean(reward_returns):.2f} +/- {numpy.std(reward_returns):.2f}")
+    for action_history in unique_success_histories:
+        environment.render_human(action_history, show_observation=False)
     
+    print(f"unique successes: {len(unique_success_histories)}")
+    print(f"success rate    : {100 * numpy.mean(successes)}% +/- {numpy.std(successes):.2f}")
+    print(f"average return  : {numpy.mean(reward_returns):.2f} +/- {numpy.std(reward_returns):.2f}")
+
 
 if __name__ == "__main__":
     checkpoint_path = sys.argv[1]
@@ -57,5 +66,5 @@ if __name__ == "__main__":
         model_config,
         environment_config,
         num_episodes=1_000,
-        render=True,
+        render=False,
     )

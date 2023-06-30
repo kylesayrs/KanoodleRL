@@ -1,12 +1,13 @@
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import numpy
 import functools
-import importlib
 
 import stable_baselines3
 from stable_baselines3.common.vec_env.dummy_vec_env import DummyVecEnv
-from gym import Env
+
+if TYPE_CHECKING:
+    from src.config import TrainingConfig, ModelConfig
 
 
 class Immutable:

@@ -32,7 +32,8 @@ def get_action_index_input(environment: KanoodleEnvironment, action_piece_index:
             not environment.invalid_actions_mask[action_index]
         ):
             print(f"[{action_index}]: ")
-            environment.render_action(action, action_piece_index)
+            environment.render_action(action_index)
+            print(environment.get_action_history_mask())
 
     action_index = None
     while action_index == None:
@@ -57,10 +58,13 @@ def play_game(environment_config: EnvironmentConfig):
 
         action_index = get_action_index_input(environment, action_piece_index)
 
-        action_confs = numpy.zeros(len(environment.actions))
-        action_confs[action_index] = 1.0
+        if environment_config.discrete:
+            player_output = action_index
+        else:
+            player_output = numpy.zeros(len(environment.actions))
+            player_output[action_index] = 1.0
 
-        observation, reward, is_finished, info = environment.step(action_confs)
+        observation, reward, is_finished, info = environment.step(player_output)
         total_rewards += reward
 
     environment.render()
