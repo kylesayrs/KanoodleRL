@@ -69,6 +69,9 @@ class KanoodleEnvironment(Env):
         self.invalid_actions_mask = self._initial_invalid_actions.copy()
         self.action_history = []
 
+        for _ in range(self.config.num_starting_pieces):
+            self.step(self.get_random_output())
+
         return self.get_observation()
     
 
@@ -91,6 +94,17 @@ class KanoodleEnvironment(Env):
             self.actions[action_index],
             self.pieces_mask[action_index]
         )
+    
+
+    def get_random_output(self):
+        if self.config.discrete_actions:
+            return numpy.random.choice(
+                range(len(self.actions))
+            )
+    
+        else:
+            return numpy.ones((len(self.actions)))
+            
 
 
     def step(self, model_output: Union[int, numpy.ndarray]) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
@@ -253,6 +267,9 @@ class KanoodleEnvironment(Env):
 
     @property
     def available_pieces(self):
+        """
+        Used for visualization during human play
+        """
         return numpy.unique(self.pieces_mask[~self.invalid_actions_mask])
 
 

@@ -1,20 +1,19 @@
-from typing import List, Tuple, Dict, Any, Optional
+from typing import List, Tuple, Optional
 from pydantic import BaseModel, Field
 
 import torch
-from stable_baselines3.common.buffers import ReplayBuffer
 
 from src.utils import Immutable
 
 
 class TrainingConfig(Immutable, BaseModel):
     n_envs: int = Field(default=2)
-    total_timesteps: float = Field(default=100_000)  # demo: 15k
+    total_timesteps: float = Field(default=100_000)  # demo: 15k, junior: 100k
     log_interval: int = Field(default=10)
 
     model_arch: str = "DQN"
 
-    wandb_mode: str = Field(default="disabled")
+    wandb_mode: str = Field(default="online")
     n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
     eval_render: bool = Field(default=False)
@@ -41,14 +40,14 @@ class ModelConfig(Immutable, BaseModel):
 
 class DQNConfig(ModelConfig):
     learning_starts: int = Field(default=128)
-    learning_rate: float = Field(default=1e-3)  # demo: 1e-2
+    learning_rate: float = Field(default=1e-3)  # demo: 1e-2, junior: 1e-3
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
     gamma: float = Field(default=0.9)
 
     exploration_fraction: float = Field(default=0.1)
     exploration_initial_eps: float = Field(default=1.0)
-    exploration_final_eps: float = Field(default=0.03)
+    exploration_final_eps: float = Field(default=0.05)
 
     buffer_size: int = Field(default=100_000)
     optimize_memory_usage: bool = Field(default=False)
@@ -56,10 +55,10 @@ class DQNConfig(ModelConfig):
 
 class DDPGConfig(ModelConfig):
     learning_starts: int = Field(default=128)
-    learning_rate: float = Field(default=3e-3)  # demo: 1e-5, junior: 1e-6
+    learning_rate: float = Field(default=3e-6)  # demo: 1e-5, junior: 1e-6
     train_freq: Tuple[int, str] = Field(default=(10, "step"))
     batch_size: int = Field(default=128)
-    gamma: float = Field(default=0.995)
+    gamma: float = Field(default=0.9)
 
     action_noise: Optional[str] = Field(default="Normal")
     action_noise_mu: float = Field(default=0.0)
@@ -86,17 +85,18 @@ class PPOConfig(ModelConfig):
 class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(5, 5))
     pieces_set_name: str = Field(default="junior")
+    num_starting_pieces: int = Field(default=0)
 
     discrete_actions: bool = Field(default=True)
     prevent_invalid_actions: bool = Field(default=True)
     calc_unsolvable: bool = Field(default=True)
 
     observation_spaces: List[str] = [
-        "board",
-        "board_image",
+        #"board",
+        #"board_image",
         "action_history_mask",
-        "available_pieces_mask",
-        "invalid_actions_mask"    
+        #"available_pieces_mask",
+        #"invalid_actions_mask"    
     ]
 
     complete_reward: float = Field(default=10.0)
