@@ -16,8 +16,7 @@ def validate_random_agent(environment_config: EnvironmentConfig, num_episodes: i
         is_finished = False
 
         while not is_finished:
-            action_confs = numpy.ones(len(environment.actions))
-            _observation, reward, is_finished, info = environment.step(action_confs)
+            _observation, reward, is_finished, info = environment.random_step()
 
             rewards.append(reward)
             
@@ -36,6 +35,6 @@ if __name__ == "__main__":
 
     validate_random_agent(
         environment_config,
-        num_episodes=1_000,
+        num_episodes=10,
         render=False
     )

@@ -13,7 +13,7 @@ class TrainingConfig(Immutable, BaseModel):
 
     model_arch: str = "DQN"
 
-    wandb_mode: str = Field(default="online")
+    wandb_mode: str = Field(default="disabled")
     n_eval_episodes: int = Field(default=0)
     eval_freq: int = Field(default=1_000, description="num steps")
     eval_render: bool = Field(default=False)
@@ -83,8 +83,8 @@ class PPOConfig(ModelConfig):
 
 
 class EnvironmentConfig(BaseModel):
-    board_shape: Tuple[int, int] = Field(default=(5, 5))
-    pieces_set_name: str = Field(default="junior")
+    board_shape: Tuple[int, int] = Field(default=(11, 5))
+    pieces_set_name: str = Field(default="standard")
     num_starting_pieces: int = Field(default=0)
 
     discrete_actions: bool = Field(default=True)

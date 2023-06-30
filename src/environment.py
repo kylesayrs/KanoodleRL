@@ -70,7 +70,7 @@ class KanoodleEnvironment(Env):
         self.action_history = []
 
         for _ in range(self.config.num_starting_pieces):
-            self.step(self.get_random_output())
+            self.random_step()
 
         return self.get_observation()
     
@@ -104,8 +104,19 @@ class KanoodleEnvironment(Env):
     
         else:
             return numpy.ones((len(self.actions)))
-            
+        
 
+    def random_step(self):
+        if self.config.discrete_actions:
+            action = numpy.random.choice(
+                range(len(self.actions))
+            )
+    
+        else:
+            action = numpy.ones((len(self.actions)))
+        
+        return self.step(action)
+    
 
     def step(self, model_output: Union[int, numpy.ndarray]) -> Tuple[numpy.ndarray, float, bool, Dict[str, Any]]:
         action_index, action, piece_index = self.get_action(model_output)
