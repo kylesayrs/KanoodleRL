@@ -28,24 +28,40 @@ class KanoodleEnvironment(Env):
         self._intersecting_actions_masks = get_intersecting_actions_masks(self.actions)
         self._initial_invalid_actions = self.update_invalid_actions()
 
-        self.observation_space = spaces.Dict({
-            #"board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
-            #"board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
-            "action_history_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
-            #"available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
-            "invalid_actions_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
-        })
-
-        if self.config.discrete:
-            self.action_space = spaces.Discrete(len(self.actions))
-        else:
-            self.action_space = spaces.Box(0.0, 100, (len(self.actions), ))
+        # spaces
+        self.observation_space = self.make_observation_space()
+        self.action_space = self.make_action_space()
 
         self.reset()
 
 
     def validate_config(self, config):
         pass
+
+
+    def make_observation_space(self):
+        all_spaces_dict = {
+            "board": spaces.Box(0.0, 1.0, (numpy.prod(self.config.board_shape), )),
+            "board_image": spaces.Box(0.0, 1.0, self.config.board_shape),
+            "action_history_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
+            "available_pieces_mask": spaces.Box(0.0, 1.0, (len(self.pieces), )),
+            "invalid_actions_mask": spaces.Box(0.0, 1.0, (len(self.actions), )),
+        }
+
+        spaces_dict = {
+            space_name: space
+            for space_name, space in all_spaces_dict.items()
+            if space_name in self.config.observation_spaces
+        }
+
+        return spaces.Dict(spaces_dict)
+
+
+    def make_action_space(self):
+        if self.config.discrete_actions:
+            return spaces.Discrete(len(self.actions))
+        else:
+            return spaces.Box(0.0, 100, (len(self.actions), ))
 
 
     def reset(self) -> None:
@@ -57,7 +73,7 @@ class KanoodleEnvironment(Env):
     
 
     def get_action(self, model_output):
-        if self.config.discrete:
+        if self.config.discrete_actions:
             action_index = model_output
             if self.config.prevent_invalid_actions and self.invalid_actions_mask[action_index]:
                 action_index = numpy.random.choice(
@@ -101,15 +117,27 @@ class KanoodleEnvironment(Env):
     
 
     def get_observation(self) -> numpy.ndarray:
-        available_pieces_mask = numpy.zeros(len(self.pieces), dtype=numpy.float32)
-        available_pieces_mask[self.available_pieces] = 1.0
-        return {
-            #"board": self.board.flatten(),
-            #"board_image": self.board,
-            "action_history_mask": self.get_action_history_mask(),
-            #"available_pieces_mask": available_pieces_mask,
-            "invalid_actions_mask": self.invalid_actions_mask
-        }
+        observation_dict = {}
+
+        if "board" in self.config.observation_spaces:
+            observation_dict["board"] = self.board.flatten()
+
+        if "board_image" in self.config.observation_spaces:
+            observation_dict["board_image"] = self.board
+
+        if "action_history_mask" in self.config.observation_spaces:
+            observation_dict["action_history_mask"] = self.get_action_history_mask()
+
+        if "available_pieces_mask" in self.config.observation_spaces:
+            available_pieces_mask = numpy.zeros(len(self.pieces), dtype=numpy.float32)
+            available_pieces_mask[self.available_pieces] = 1.0
+            observation_dict["available_pieces_mask"] = available_pieces_mask
+
+        if "invalid_actions_mask" in self.config.observation_spaces:
+            observation_dict["invalid_actions_mask"] = self.invalid_actions_mask
+
+
+        return observation_dict
     
 
     def is_success(self):

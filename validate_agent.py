@@ -13,7 +13,7 @@ def validate_agent(
     checkpoint_path: str,
     model_config: ModelConfig,
     environment_config: EnvironmentConfig,
-    greedy_policy: bool = False,
+    deterministic: bool = False,
     num_episodes: int = 100,
     render: bool = True,
 ):
@@ -30,7 +30,7 @@ def validate_agent(
         is_finished = False
 
         while not is_finished:
-            action_confs, _states = model.predict(observation)
+            action_confs, _states = model.predict(observation, deterministic=deterministic)
             observation, reward, is_finished, info = environment.step(action_confs)
 
             rewards.append(reward)
@@ -65,6 +65,7 @@ if __name__ == "__main__":
         checkpoint_path,
         model_config,
         environment_config,
+        deterministic=True,
         num_episodes=1_000,
         render=False,
     )

@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, Any, Optional
+from typing import List, Tuple, Dict, Any, Optional
 from pydantic import BaseModel, Field
 
 import torch
@@ -25,8 +25,8 @@ class TrainingConfig(Immutable, BaseModel):
 class ModelConfig(Immutable, BaseModel):
     policy: str = Field(default="MultiInputPolicy")
     policy_kwargs: str = Field(default={
-        "activation_fn": torch.nn.ReLU,
-        "net_arch": [256, 256, 256]
+        #"activation_fn": torch.nn.ReLU,
+        #"net_arch": [512, 512, 512]
         #"net_arch": [512, 256, 128, 64, 32]
         #"net_arch": [128, 128, 128]
     })
@@ -87,14 +87,22 @@ class EnvironmentConfig(BaseModel):
     board_shape: Tuple[int, int] = Field(default=(5, 5))
     pieces_set_name: str = Field(default="junior")
 
-    discrete: bool = Field(default=True)
+    discrete_actions: bool = Field(default=True)
     prevent_invalid_actions: bool = Field(default=True)
     calc_unsolvable: bool = Field(default=True)
+
+    observation_spaces: List[str] = [
+        "board",
+        "board_image",
+        "action_history_mask",
+        "available_pieces_mask",
+        "invalid_actions_mask"    
+    ]
 
     complete_reward: float = Field(default=10.0)
     fail_reward: float = Field(default=-10.0)
     fill_reward: float = Field(default=0.0)
-    step_reward: float = Field(default=1.0)
+    step_reward: float = Field(default=0.0)
 
     solid_char: str = Field(default="*")
     empty_char: str = Field(default="o")
